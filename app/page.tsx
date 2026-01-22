@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { BugReport } from '@/lib/types';
+import { detectBrowserInfo } from '@/lib/browser-detection';
 
 export default function Home() {
   const [formData, setFormData] = useState<Partial<BugReport>>({
@@ -25,33 +26,7 @@ export default function Home() {
   } | null>(null);
 
   useEffect(() => {
-    const detectBrowser = () => {
-      const userAgent = navigator.userAgent;
-      let browserName = 'Unknown';
-      let browserVersion = 'Unknown';
-
-      if (userAgent.indexOf('Firefox') > -1) {
-        browserName = 'Firefox';
-        const match = userAgent.match(/Firefox\/(\d+\.\d+)/);
-        if (match) browserVersion = match[1];
-      } else if (userAgent.indexOf('Edg') > -1) {
-        browserName = 'Edge';
-        const match = userAgent.match(/Edg\/(\d+\.\d+)/);
-        if (match) browserVersion = match[1];
-      } else if (userAgent.indexOf('Chrome') > -1) {
-        browserName = 'Chrome';
-        const match = userAgent.match(/Chrome\/(\d+\.\d+)/);
-        if (match) browserVersion = match[1];
-      } else if (userAgent.indexOf('Safari') > -1) {
-        browserName = 'Safari';
-        const match = userAgent.match(/Version\/(\d+\.\d+)/);
-        if (match) browserVersion = match[1];
-      }
-
-      return `${browserName} ${browserVersion}`;
-    };
-
-    const browserInfo = detectBrowser();
+    const browserInfo = detectBrowserInfo();
     setFormData((prev) => ({
       ...prev,
       browserInfo,
