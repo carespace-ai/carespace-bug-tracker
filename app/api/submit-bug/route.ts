@@ -72,7 +72,25 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
+    // Parse FormData instead of JSON
+    const formData = await request.formData();
+
+    // Extract form fields from FormData
+    const body = {
+      title: formData.get('title') as string,
+      description: formData.get('description') as string,
+      stepsToReproduce: formData.get('stepsToReproduce') as string | undefined,
+      expectedBehavior: formData.get('expectedBehavior') as string | undefined,
+      actualBehavior: formData.get('actualBehavior') as string | undefined,
+      severity: formData.get('severity') as string,
+      category: formData.get('category') as string,
+      userEmail: formData.get('userEmail') as string | undefined,
+      environment: formData.get('environment') as string | undefined,
+      browserInfo: formData.get('browserInfo') as string | undefined,
+    };
+
+    // Extract file attachments
+    const attachments = formData.getAll('attachments') as File[];
 
     // Validate input
     const validationResult = bugReportSchema.safeParse(body);
