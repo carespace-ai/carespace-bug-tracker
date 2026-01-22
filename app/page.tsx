@@ -178,7 +178,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8" style={{ background: 'var(--bg-page)' }}>
+    <div className="page-container min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-6">
@@ -188,7 +188,7 @@ export default function Home() {
               className="h-16 w-auto"
             />
           </div>
-          <h1 className="text-4xl font-bold mb-2" style={{ color: '#421264' }}>Bug Tracker</h1>
+          <h1 className="header-title text-4xl font-bold mb-2">Bug Tracker</h1>
           <p className="text-[rgba(0,0,0,0.55)]">Report bugs and we'll process them automatically with AI</p>
         </div>
 
@@ -252,7 +252,7 @@ export default function Home() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="form-card rounded-lg p-8 space-y-6" style={{ backgroundColor: 'var(--surface-primary)' }}>
+        <form onSubmit={handleSubmit} className="form-container form-card rounded-lg p-8 space-y-6">
           {/* Title */}
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-[rgba(0,0,0,0.75)] mb-2">
@@ -272,7 +272,7 @@ export default function Home() {
                     ? 'border-red-300 focus:ring-red-500'
                     : isFieldValid('title')
                     ? 'border-green-300 focus:ring-green-500'
-                    : 'border-[rgba(255,255,255,0.08)] focus:ring-[#f4ebff] focus:border-[#9f30ed]'
+                    : 'border-[rgba(255,255,255,0.15)] focus:ring-[#f4ebff] focus:border-[#9f30ed]'
                 }`}
                 placeholder="Brief description of the bug"
               />
@@ -308,7 +308,7 @@ export default function Home() {
                     ? 'border-red-300 focus:ring-red-500'
                     : isFieldValid('description')
                     ? 'border-green-300 focus:ring-green-500'
-                    : 'border-[rgba(255,255,255,0.08)] focus:ring-[#f4ebff] focus:border-[#9f30ed]'
+                    : 'border-[rgba(255,255,255,0.15)] focus:ring-[#f4ebff] focus:border-[#9f30ed]'
                 }`}
                 placeholder="Detailed description of the bug"
               />
@@ -336,7 +336,7 @@ export default function Home() {
               value={formData.stepsToReproduce}
               onChange={handleChange}
               rows={3}
-              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.08)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
+              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.15)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
               placeholder="1. Go to...\n2. Click on...\n3. See error"
             />
           </div>
@@ -353,7 +353,7 @@ export default function Home() {
                 value={formData.expectedBehavior}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.08)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
+                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.15)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
                 placeholder="What should happen?"
               />
             </div>
@@ -367,7 +367,7 @@ export default function Home() {
                 value={formData.actualBehavior}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.08)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
+                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.15)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
                 placeholder="What actually happens?"
               />
             </div>
@@ -385,7 +385,7 @@ export default function Home() {
                 required
                 value={formData.severity}
                 onChange={handleChange}
-                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.08)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
+                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.15)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -403,7 +403,7 @@ export default function Home() {
                 required
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.08)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
+                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.15)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
               >
                 <option value="ui">UI</option>
                 <option value="functionality">Functionality</option>
@@ -433,7 +433,7 @@ export default function Home() {
                       ? 'border-red-300 focus:ring-red-500'
                       : isFieldValid('userEmail')
                       ? 'border-green-300 focus:ring-green-500'
-                      : 'border-[rgba(255,255,255,0.08)] focus:ring-[#f4ebff] focus:border-[#9f30ed]'
+                      : 'border-[rgba(255,255,255,0.15)] focus:ring-[#f4ebff] focus:border-[#9f30ed]'
                   }`}
                   placeholder="your@email.com"
                 />
@@ -459,7 +459,7 @@ export default function Home() {
                 name="environment"
                 value={formData.environment}
                 onChange={handleChange}
-                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.08)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
+                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.15)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
                 placeholder="Production, Staging, etc."
               />
             </div>
@@ -476,7 +476,7 @@ export default function Home() {
               name="browserInfo"
               value={formData.browserInfo}
               onChange={handleChange}
-              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.08)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
+              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.15)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
               placeholder="Chrome 120, Safari 17, etc."
             />
           </div>
@@ -494,7 +494,7 @@ export default function Home() {
                 onChange={handleFileChange}
                 multiple
                 accept="image/*,video/mp4,video/quicktime,text/plain,.log,application/pdf,application/json"
-                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.08)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-800 hover:file:bg-purple-100"
+                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.15)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-800 hover:file:bg-purple-100"
               />
               <p className="mt-1 text-xs text-[rgba(0,0,0,0.45)]">
                 Upload screenshots, videos, or log files (max 10MB per file, formats: JPG, PNG, GIF, WebP, MP4, MOV, TXT, LOG, PDF, JSON)
@@ -549,7 +549,7 @@ export default function Home() {
           <button
             type="submit"
             disabled={isSubmitting}
-            style={{ backgroundColor: 'var(--brand-primary)' }} className="w-full text-white py-3 px-6 rounded-lg font-semibold hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="btn-primary w-full text-white py-3 px-6 rounded-lg font-semibold hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center">

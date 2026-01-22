@@ -80,11 +80,11 @@
     --text-tertiary: rgba(255, 255, 255, 0.45);
     --text-placeholder: rgba(255, 255, 255, 0.35);
 
-    --border-default: rgba(255, 255, 255, 0.12);
-    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-default: rgba(255, 255, 255, 0.15);
+    --border-subtle: rgba(255, 255, 255, 0.12);
 
-    /* Input borders must be visible in dark mode */
-    --input-border: rgba(255, 255, 255, 0.12);
+    /* Input borders must be visible in dark mode - increased contrast */
+    --input-border: rgba(255, 255, 255, 0.15);
   }
 }
 
@@ -94,6 +94,26 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Page container */
+.page-container {
+  background: var(--bg-page);
+}
+
+/* Header title */
+.header-title {
+  color: #421264;
+}
+
+/* Form container */
+.form-container {
+  background-color: var(--surface-primary);
+}
+
+/* Primary button */
+.btn-primary {
+  background-color: var(--brand-primary);
 }
 
 /* Form Elements - Ant Design style with transparent borders */
