@@ -13,6 +13,7 @@ An automated bug tracking system that collects customer bug reports, enhances th
   - Automatic priority scoring
 - **🔗 GitHub Integration** - Automatically creates well-formatted GitHub issues
 - **📊 ClickUp Integration** - Logs tasks in ClickUp for project management
+- **🛡️ Rate Limiting Protection** - Built-in protection against spam and abuse (5 requests per 15 min per IP)
 - **⚡ Serverless Architecture** - Built with Next.js, ready for Vercel deployment
 
 ## 🏗️ Architecture
@@ -192,6 +193,7 @@ bug-tracker/
 │   └── globals.css               # Global styles
 ├── lib/
 │   ├── types.ts                  # TypeScript type definitions
+│   ├── rate-limiter.ts           # Rate limiting utility (sliding window)
 │   ├── llm-service.ts            # AI enhancement logic
 │   ├── github-service.ts         # GitHub API integration
 │   └── clickup-service.ts        # ClickUp API integration
@@ -200,64 +202,106 @@ bug-tracker/
 └── README.md                     # This file
 ```
 
-## 🔒 Security Notes
+## 🔒 Security & Rate Limiting
 
-### Security Headers
+### Rate Limiting Protection
 
-This application implements comprehensive HTTP security headers to protect against common web attacks. All headers are configured in `next.config.ts` and are automatically applied to all routes.
+The bug submission API endpoint (`/api/submit-bug`) is protected by rate limiting to prevent:
+- Spam attacks and abuse
+- API quota exhaustion (Anthropic, GitHub, ClickUp)
+- Denial of service attacks
+- Excessive API costs from malicious actors
 
-#### Implemented Headers
+**Current Limits**: **5 requests per 15 minutes** per IP address
 
-**Content-Security-Policy (CSP)**
-- Prevents XSS attacks by controlling which resources the browser can load
-- Allows scripts and styles from the application itself
-- Permits connections to Anthropic, GitHub, and ClickUp APIs
-- Blocks framing from external sites
-- **Note**: Includes `'unsafe-inline'` for Next.js styling compatibility. The `'unsafe-eval'` directive is only included in development mode for hot module reloading and is automatically removed in production builds for enhanced security.
+### How It Works
 
-**X-Frame-Options: DENY**
-- Prevents clickjacking attacks by blocking the page from being embedded in iframes
+The rate limiter uses a **sliding window algorithm** that tracks requests by client IP address:
+- Requests are tracked per IP using the `X-Forwarded-For` or `X-Real-IP` headers
+- After exceeding the limit, clients receive a `429 Too Many Requests` response
+- Response includes `Retry-After` header indicating when they can retry
+- Counters automatically clean up expired entries to prevent memory leaks
 
-**X-Content-Type-Options: nosniff**
-- Prevents MIME type sniffing attacks by enforcing declared content types
+### Configuration
 
-**Referrer-Policy: strict-origin-when-cross-origin**
-- Controls referrer information sent with requests to protect user privacy
+To adjust rate limits, edit the constants in `lib/rate-limiter.ts`:
 
-**Permissions-Policy**
-- Disables unnecessary browser features (camera, microphone, geolocation)
-- Reduces attack surface and protects user privacy
-
-**Strict-Transport-Security (HSTS)**
-- Enforces HTTPS connections in production
-- Includes subdomains for comprehensive protection
-- **Note**: Only effective when served over HTTPS
-
-**X-XSS-Protection: 1; mode=block**
-- Provides legacy XSS protection for older browsers
-- Blocks page rendering if XSS attack is detected
-
-#### Verifying Security Headers
-
-To verify headers are working correctly:
-
-```bash
-# Start the development server
-npm run dev
-
-# In another terminal, check headers
-curl -I http://localhost:3000
+```typescript
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX_REQUESTS = 5;           // 5 requests per window
 ```
 
-You should see all security headers in the response. In production on Vercel, HSTS will be enforced automatically.
+### ⚠️ Production Deployment Considerations
 
-### API Security
+**Important**: The current implementation uses **in-memory storage** which has limitations in production environments.
+
+#### In-Memory Storage Limitations
+
+- **Serverless/Auto-Scaling**: Each serverless function instance maintains its own memory. In auto-scaling environments (Vercel, AWS Lambda), different instances won't share rate limit state, reducing effectiveness.
+- **Instance Restarts**: Rate limit counters reset when instances restart, scale down, or during deployments.
+- **Multi-Server Deployments**: Not suitable for load-balanced or distributed systems without a shared data store.
+- **Effectiveness**: Works best for single-instance deployments or low-traffic sites.
+
+#### Recommended Production Upgrade
+
+For production deployments at scale, **upgrade to Redis-based rate limiting** for shared state across all instances:
+
+##### Option 1: Vercel KV (Recommended for Vercel)
+
+```bash
+npm install @vercel/kv
+```
+
+**Setup:**
+1. Go to Vercel Dashboard → Your Project → Storage
+2. Create a KV Database (powered by Upstash Redis)
+3. Connect it to your project (environment variables are auto-configured)
+4. Update `lib/rate-limiter.ts` to use `@vercel/kv`
+
+##### Option 2: Upstash Redis (Works Anywhere)
+
+```bash
+npm install @upstash/redis
+```
+
+**Setup:**
+1. Create account at [upstash.com](https://upstash.com/)
+2. Create a Redis database (free tier available)
+3. Add credentials to environment variables:
+   ```
+   UPSTASH_REDIS_REST_URL=https://your-db.upstash.io
+   UPSTASH_REDIS_REST_TOKEN=your-token
+   ```
+4. Update `lib/rate-limiter.ts` to use Upstash Redis client
+
+##### Migration Steps
+
+To migrate from in-memory to Redis:
+
+1. Install your chosen Redis client (see above)
+2. Update `lib/rate-limiter.ts`:
+   - Replace `Map` storage with Redis commands
+   - Use `SETEX` or `EXPIRE` for automatic key expiration
+   - Use `INCR` for atomic counter increments
+   - Use `TTL` to check remaining time
+3. Test thoroughly in staging environment
+4. Deploy to production
+
+**When In-Memory is Acceptable:**
+- Development and testing environments
+- Proof-of-concept or MVP phase
+- Low-traffic production sites (<100 requests/hour)
+- Single-instance deployments
+- When enhanced by additional security layers (CDN, firewall)
+
+### Other Security Best Practices
 
 - Never commit `.env.local` to version control
-- Keep API keys secure
+- Keep API keys secure and rotate them periodically
 - Use environment variables in Vercel for production
-- Implement rate limiting for production use
 - Consider adding authentication for the submission form
+- Monitor API usage and costs regularly
+- Implement logging and alerting for suspicious activity
 
 ## 🐛 Troubleshooting
 
