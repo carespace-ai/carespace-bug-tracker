@@ -8,6 +8,15 @@ const anthropic = new Anthropic({
 });
 
 export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBugReport> {
+  // Format attachments section for the prompt
+  let attachmentsInfo = '';
+  if (bugReport.attachments && bugReport.attachments.length > 0) {
+    attachmentsInfo = '\nAttachments:\n' +
+      bugReport.attachments
+        .map(att => `- ${att.name} (${att.type}, ${(att.size / 1024).toFixed(2)} KB)`)
+        .join('\n');
+  }
+
   const prompt = `You are a technical bug report analyzer. Enhance the following bug report with:
 1. A clear, detailed technical description
 2. Suggested GitHub labels (max 5)
@@ -15,6 +24,9 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
 4. A specific prompt for Claude Code to fix this issue
 5. Priority score (1-5, where 5 is critical)
 
+${bugReport.attachments && bugReport.attachments.length > 0
+  ? 'IMPORTANT: This bug report includes attachments. Your enhanced description should reference these attachments appropriately (e.g., "See attached screenshot for visual details" or "Refer to attached log file for error stack trace").\n'
+  : ''}
 Bug Report:
 Title: ${bugReport.title}
 Description: ${bugReport.description}
@@ -24,7 +36,7 @@ Actual Behavior: ${bugReport.actualBehavior || 'Not provided'}
 Severity: ${bugReport.severity}
 Category: ${bugReport.category}
 Environment: ${bugReport.environment || 'Not provided'}
-Browser: ${bugReport.browserInfo || 'Not provided'}
+Browser: ${bugReport.browserInfo || 'Not provided'}${attachmentsInfo}
 
 Respond in JSON format:
 {
