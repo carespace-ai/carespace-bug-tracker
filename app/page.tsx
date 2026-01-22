@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BugReport } from '@/lib/types';
 
 export default function Home() {
@@ -23,6 +23,19 @@ export default function Home() {
     message: string;
     data?: any;
   } | null>(null);
+
+  // Load draft from localStorage on component mount
+  useEffect(() => {
+    try {
+      const savedDraft = localStorage.getItem('bugReportDraft');
+      if (savedDraft) {
+        const parsedDraft = JSON.parse(savedDraft);
+        setFormData(parsedDraft);
+      }
+    } catch (error) {
+      // Silently fail if localStorage is not available or data is corrupted
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
