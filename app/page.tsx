@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BugReport } from '@/lib/types';
 
 export default function Home() {
@@ -23,6 +23,25 @@ export default function Home() {
     message: string;
     data?: any;
   } | null>(null);
+
+  // Auto-detect browser and environment info on mount
+  useEffect(() => {
+    const detectBrowserInfo = () => {
+      const userAgent = navigator.userAgent;
+      const platform = navigator.platform;
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+
+      const browserInfo = `${userAgent} | Platform: ${platform} | Viewport: ${screenWidth}x${screenHeight}`;
+
+      setFormData((prev) => ({
+        ...prev,
+        browserInfo,
+      }));
+    };
+
+    detectBrowserInfo();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
