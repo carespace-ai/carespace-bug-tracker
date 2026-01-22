@@ -205,7 +205,7 @@ export default function Home() {
         <div className="text-center mb-8">
           <div className="flex justify-center mb-6">
             <img
-              src="/brand/logo/logo-horizontal-color-light.svg"
+              src="/brand/logo/logo-horizontal-color-dark.svg"
               alt="Carespace Logo"
               className="h-16 w-auto"
             />
