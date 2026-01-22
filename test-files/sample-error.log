@@ -1,0 +1,15 @@
+[2026-01-22 14:00:00] ERROR: Application crashed
+[2026-01-22 14:00:01] INFO: Stack trace:
+  at handleSubmit (app/page.tsx:245)
+  at onClick (components/Button.tsx:12)
+  at HTMLButtonElement.callCallback (react-dom.js:4164)
+[2026-01-22 14:00:02] ERROR: TypeError: Cannot read property 'data' of undefined
+[2026-01-22 14:00:03] INFO: User session: abc-123-def
+[2026-01-22 14:00:04] ERROR: Failed to submit form
+[2026-01-22 14:00:05] INFO: Retrying request...
+[2026-01-22 14:00:06] ERROR: Request timeout after 30s
+[2026-01-22 14:00:07] WARN: Falling back to error page
+[2026-01-22 14:00:08] INFO: User redirected to /error
+
+This is a sample log file for testing the file attachment feature.
+It demonstrates what a typical error log might look like.
