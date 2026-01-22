@@ -9,6 +9,12 @@ export interface BugReport {
   userEmail?: string;
   environment?: string;
   browserInfo?: string;
+  attachments?: {
+    name: string;
+    size: number;
+    type: string;
+    url: string;
+  }[];
 }
 
 export interface EnhancedBugReport extends BugReport {

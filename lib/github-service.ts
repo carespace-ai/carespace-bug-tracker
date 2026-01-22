@@ -1,6 +1,5 @@
 import { Octokit } from '@octokit/rest';
 import { EnhancedBugReport, GitHubIssue } from './types';
-import { redactEmail } from './utils/redact-email';
 
 const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN
@@ -9,8 +8,88 @@ const octokit = new Octokit({
 const owner = process.env.GITHUB_OWNER || '';
 const repo = process.env.GITHUB_REPO || '';
 
+/**
+ * Uploads a file to the GitHub repository and returns its raw URL
+ * @param fileContent - Buffer containing the file content
+ * @param filename - Original filename
+ * @returns Raw GitHub URL to the uploaded file
+ */
+export async function uploadFileToGitHub(
+  fileContent: Buffer,
+  filename: string
+): Promise<string> {
+  try {
+    // Create a unique path using timestamp to avoid conflicts
+    const timestamp = Date.now();
+    const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filepath = `bug-attachments/${timestamp}-${sanitizedFilename}`;
+
+    // Convert file content to base64 as required by GitHub API
+    const content = fileContent.toString('base64');
+
+    // Upload file to repository
+    const response = await octokit.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path: filepath,
+      message: `Upload bug report attachment: ${filename}`,
+      content,
+    });
+
+    // Get the SHA of the uploaded file to construct the raw URL
+    const sha = response.data.content?.sha;
+    if (!sha) {
+      throw new Error('Failed to get file SHA from GitHub response');
+    }
+
+    // Return the raw content URL
+    // Format: https://raw.githubusercontent.com/{owner}/{repo}/main/{filepath}
+    const branch = 'main'; // Default branch, could be made configurable
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filepath}`;
+  } catch (error) {
+    console.error('Error uploading file to GitHub:', error);
+    throw new Error(`Failed to upload file to GitHub: ${filename}`);
+  }
+}
+
+/**
+ * Uploads multiple files to GitHub repository
+ * @param files - Array of File objects from FormData
+ * @returns Array of attachment objects with name, size, type, and GitHub URL
+ */
+export async function uploadFilesToGitHub(
+  files: File[]
+): Promise<{ name: string; size: number; type: string; url: string }[]> {
+  const uploadPromises = files.map(async (file) => {
+    // Convert File to Buffer
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Upload file and get URL
+    const url = await uploadFileToGitHub(buffer, file.name);
+
+    return {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      url,
+    };
+  });
+
+  // Upload all files in parallel
+  return Promise.all(uploadPromises);
+}
+
 export async function createGitHubIssue(enhancedReport: EnhancedBugReport): Promise<string> {
-  // Email is redacted using redactEmail() to protect user privacy (PII) in public GitHub issues
+  // Format attachments section
+  let attachmentsSection = '';
+  if (enhancedReport.attachments && enhancedReport.attachments.length > 0) {
+    attachmentsSection = '\n### Attachments\n' +
+      enhancedReport.attachments
+        .map(att => `- [${att.name}](${att.url}) (${(att.size / 1024).toFixed(2)} KB)`)
+        .join('\n');
+  }
+
   const issueBody = `## Bug Report
 
 ### Description
@@ -24,6 +103,7 @@ ${enhancedReport.expectedBehavior || 'Not provided'}
 
 ### Actual Behavior
 ${enhancedReport.actualBehavior || 'Not provided'}
+${attachmentsSection}
 
 ### Technical Context
 ${enhancedReport.technicalContext}
@@ -33,7 +113,7 @@ ${enhancedReport.technicalContext}
 - **Category**: ${enhancedReport.category}
 - **Environment**: ${enhancedReport.environment || 'Not provided'}
 - **Browser**: ${enhancedReport.browserInfo || 'Not provided'}
-${enhancedReport.userEmail ? `- **Reporter**: ${redactEmail(enhancedReport.userEmail)}` : ''}
+${enhancedReport.userEmail ? `- **Reporter**: ${enhancedReport.userEmail}` : ''}
 
 ---
 

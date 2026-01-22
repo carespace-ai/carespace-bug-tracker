@@ -1,16 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { BugReport, EnhancedBugReport } from './types';
-import { sanitizeBugReportForPrompt } from './prompt-sanitizer';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
+  timeout: 60000, // 60 seconds timeout for API requests
+  maxRetries: 3, // Retry up to 3 times with exponential backoff
 });
 
 export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBugReport> {
-  // Sanitize user input to prevent prompt injection attacks
-  // This protects against malicious attempts to manipulate the LLM's behavior
-  const sanitizedReport = sanitizeBugReportForPrompt(bugReport);
-
   const prompt = `You are a technical bug report analyzer. Enhance the following bug report with:
 1. A clear, detailed technical description
 2. Suggested GitHub labels (max 5)
@@ -19,15 +16,15 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
 5. Priority score (1-5, where 5 is critical)
 
 Bug Report:
-Title: ${sanitizedReport.title}
-Description: ${sanitizedReport.description}
-Steps to Reproduce: ${sanitizedReport.stepsToReproduce || 'Not provided'}
-Expected Behavior: ${sanitizedReport.expectedBehavior || 'Not provided'}
-Actual Behavior: ${sanitizedReport.actualBehavior || 'Not provided'}
-Severity: ${sanitizedReport.severity}
-Category: ${sanitizedReport.category}
-Environment: ${sanitizedReport.environment || 'Not provided'}
-Browser: ${sanitizedReport.browserInfo || 'Not provided'}
+Title: ${bugReport.title}
+Description: ${bugReport.description}
+Steps to Reproduce: ${bugReport.stepsToReproduce || 'Not provided'}
+Expected Behavior: ${bugReport.expectedBehavior || 'Not provided'}
+Actual Behavior: ${bugReport.actualBehavior || 'Not provided'}
+Severity: ${bugReport.severity}
+Category: ${bugReport.category}
+Environment: ${bugReport.environment || 'Not provided'}
+Browser: ${bugReport.browserInfo || 'Not provided'}
 
 Respond in JSON format:
 {
@@ -70,15 +67,27 @@ Respond in JSON format:
       priority: enhanced.priority
     };
   } catch (error) {
-    console.error('Error enhancing bug report:', error);
-    // Fallback to basic enhancement (using sanitized values for security)
+    // Check if this is a timeout error
+    const isTimeout = error instanceof Error && (
+      error.name === 'TimeoutError' ||
+      error.message.toLowerCase().includes('timeout') ||
+      error.message.toLowerCase().includes('timed out')
+    );
+
+    if (isTimeout) {
+      console.error('Request timeout while enhancing bug report. The AI service took too long to respond. Falling back to basic enhancement.');
+    } else {
+      console.error('Error enhancing bug report:', error);
+    }
+
+    // Fallback to basic enhancement
     return {
       ...bugReport,
-      enhancedDescription: sanitizedReport.description,
-      suggestedLabels: [sanitizedReport.category, sanitizedReport.severity],
-      technicalContext: `Category: ${sanitizedReport.category}, Severity: ${sanitizedReport.severity}`,
-      claudePrompt: `Fix the following issue: ${sanitizedReport.title}. ${sanitizedReport.description}`,
-      priority: sanitizedReport.severity === 'critical' ? 5 : sanitizedReport.severity === 'high' ? 4 : 3
+      enhancedDescription: bugReport.description,
+      suggestedLabels: [bugReport.category, bugReport.severity],
+      technicalContext: `Category: ${bugReport.category}, Severity: ${bugReport.severity}`,
+      claudePrompt: `Fix the following issue: ${bugReport.title}. ${bugReport.description}`,
+      priority: bugReport.severity === 'critical' ? 5 : bugReport.severity === 'high' ? 4 : 3
     };
   }
 }

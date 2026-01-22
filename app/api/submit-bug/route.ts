@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import axios from 'axios';
 import { enhanceBugReport } from '@/lib/llm-service';
-import { createGitHubIssue } from '@/lib/github-service';
+import { createGitHubIssue, uploadFilesToGitHub } from '@/lib/github-service';
 import { createClickUpTask } from '@/lib/clickup-service';
-import { BugReport, EnhancedBugReport } from '@/lib/types';
+import { BugReport } from '@/lib/types';
 
 const bugReportSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -19,36 +18,41 @@ const bugReportSchema = z.object({
   browserInfo: z.string().optional(),
 });
 
-// Helper function to build ClickUp task description with GitHub URL
-function buildClickUpDescription(
-  enhancedReport: EnhancedBugReport,
-  githubIssueUrl: string
-): string {
-  return `## Bug Report from Customer
-**GitHub Issue**: ${githubIssueUrl}
-
-### Description
-${enhancedReport.enhancedDescription}
-
-### Technical Context
-${enhancedReport.technicalContext}
-
-### Environment
-- Severity: ${enhancedReport.severity}
-- Category: ${enhancedReport.category}
-- Environment: ${enhancedReport.environment || 'Not provided'}
-- Browser: ${enhancedReport.browserInfo || 'Not provided'}
-
-### Claude Code Prompt
-\`\`\`
-${enhancedReport.claudePrompt}
-\`\`\``;
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    
+    // Parse FormData from request
+    const formData = await request.formData();
+
+    // Extract form fields - FormData.get() returns string | null
+    // Convert null to empty string for required fields to get proper validation errors
+    const body = {
+      title: (formData.get('title') as string | null) || '',
+      description: (formData.get('description') as string | null) || '',
+      stepsToReproduce: (formData.get('stepsToReproduce') as string) || undefined,
+      expectedBehavior: (formData.get('expectedBehavior') as string) || undefined,
+      actualBehavior: (formData.get('actualBehavior') as string) || undefined,
+      severity: (formData.get('severity') as string | null) || '',
+      category: (formData.get('category') as string | null) || '',
+      userEmail: (formData.get('userEmail') as string) || undefined,
+      environment: (formData.get('environment') as string) || undefined,
+      browserInfo: (formData.get('browserInfo') as string) || undefined,
+    };
+
+    // Extract files from FormData
+    const files: File[] = [];
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File && value.size > 0) {
+        files.push(value);
+      }
+    }
+
+    // Upload files to GitHub if present
+    let attachments: { name: string; size: number; type: string; url: string }[] = [];
+    if (files.length > 0) {
+      console.log('Uploading files to GitHub...');
+      attachments = await uploadFilesToGitHub(files);
+    }
+
     // Validate input
     const validationResult = bugReportSchema.safeParse(body);
     if (!validationResult.success) {
@@ -58,43 +62,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const bugReport: BugReport = validationResult.data;
+    const bugReport: BugReport = {
+      ...validationResult.data,
+      attachments: attachments.length > 0 ? attachments : undefined
+    };
 
     // Step 1: Enhance bug report with LLM
     console.log('Enhancing bug report with LLM...');
     const enhancedReport = await enhanceBugReport(bugReport);
 
-    // Step 2 & 3: Create GitHub issue and ClickUp task in parallel
-    console.log('Creating GitHub issue and ClickUp task in parallel...');
-    const [githubIssueUrl, clickupTaskUrl] = await Promise.all([
-      createGitHubIssue(enhancedReport),
-      createClickUpTask(enhancedReport),
-    ]);
+    // Step 2: Create GitHub issue
+    console.log('Creating GitHub issue...');
+    const githubIssueUrl = await createGitHubIssue(enhancedReport);
 
-    // Step 4: Update ClickUp task with GitHub URL (best effort)
-    try {
-      const taskIdMatch = clickupTaskUrl.match(/\/t\/([a-zA-Z0-9]+)/);
-      if (taskIdMatch && taskIdMatch[1]) {
-        const taskId = taskIdMatch[1];
-        console.log('Updating ClickUp task with GitHub URL...');
-
-        await axios.put(
-          `https://api.clickup.com/api/v2/task/${taskId}`,
-          {
-            description: buildClickUpDescription(enhancedReport, githubIssueUrl),
-          },
-          {
-            headers: {
-              Authorization: process.env.CLICKUP_API_KEY || '',
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-      }
-    } catch (error) {
-      console.error('Failed to update ClickUp task with GitHub URL:', error);
-      // Don't fail the entire request if this update fails
-    }
+    // Step 3: Create ClickUp task
+    console.log('Creating ClickUp task...');
+    const clickupTaskUrl = await createClickUpTask(enhancedReport, githubIssueUrl, files);
 
     return NextResponse.json({
       success: true,
