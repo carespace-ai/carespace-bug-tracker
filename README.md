@@ -213,7 +213,7 @@ This application implements comprehensive HTTP security headers to protect again
 - Allows scripts and styles from the application itself
 - Permits connections to Anthropic, GitHub, and ClickUp APIs
 - Blocks framing from external sites
-- **Note**: Includes `'unsafe-inline'` and `'unsafe-eval'` for Next.js compatibility
+- **Note**: Includes `'unsafe-inline'` for Next.js styling compatibility. The `'unsafe-eval'` directive is only included in development mode for hot module reloading and is automatically removed in production builds for enhanced security.
 
 **X-Frame-Options: DENY**
 - Prevents clickjacking attacks by blocking the page from being embedded in iframes
