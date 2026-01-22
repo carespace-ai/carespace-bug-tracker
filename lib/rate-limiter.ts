@@ -9,10 +9,18 @@ interface RequestLog {
   lastCleanup: number;
 }
 
-// Configuration
-const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const RATE_LIMIT_MAX_REQUESTS = 5;
-const CLEANUP_INTERVAL_MS = 60 * 1000; // Clean up every minute
+// Configuration from environment variables with defaults
+const RATE_LIMIT_WINDOW_MS = process.env.RATE_LIMIT_WINDOW_MS
+  ? parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10)
+  : 15 * 60 * 1000; // 15 minutes
+
+const RATE_LIMIT_MAX_REQUESTS = process.env.RATE_LIMIT_MAX_REQUESTS
+  ? parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10)
+  : 5;
+
+const CLEANUP_INTERVAL_MS = process.env.CLEANUP_INTERVAL_MS
+  ? parseInt(process.env.CLEANUP_INTERVAL_MS, 10)
+  : 60 * 1000; // Clean up every minute
 
 // In-memory storage
 const requestLogs = new Map<string, RequestLog>();
@@ -80,14 +88,10 @@ export function getRateLimitResult(ipAddress: string): RateLimitResult {
   // Check if under limit
   const requestCount = log.timestamps.length;
 
-  // DEBUG: Add console.log to track behavior
-  console.log(`[Rate Limiter] IP: ${ipAddress}, Count before: ${requestCount}, Limit: ${RATE_LIMIT_MAX_REQUESTS}`);
-
   if (requestCount >= RATE_LIMIT_MAX_REQUESTS) {
     // Rate limit exceeded
     const oldestTimestamp = Math.min(...log.timestamps);
     const resetTime = oldestTimestamp + RATE_LIMIT_WINDOW_MS;
-    console.log(`[Rate Limiter] BLOCKED - Count: ${requestCount}/${RATE_LIMIT_MAX_REQUESTS}`);
     return {
       allowed: false,
       remaining: 0,
@@ -97,7 +101,6 @@ export function getRateLimitResult(ipAddress: string): RateLimitResult {
 
   // Allow request and record timestamp
   log.timestamps.push(now);
-  console.log(`[Rate Limiter] ALLOWED - New count: ${log.timestamps.length}/${RATE_LIMIT_MAX_REQUESTS}`);
 
   const resetTime = now + RATE_LIMIT_WINDOW_MS;
 
