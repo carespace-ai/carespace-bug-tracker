@@ -19,6 +19,22 @@ function getRateLimitHeaders(rateLimitResult: { remaining: number; resetTime: nu
 
 /**
  * Extracts client IP address from request headers
+ *
+ * @param request - The incoming Next.js request
+ * @returns The client's IP address
+ *
+ * @important GDPR/Privacy Compliance
+ * IP addresses are considered Personally Identifiable Information (PII) under GDPR
+ * and other privacy regulations. They MUST NOT be logged or exposed in error messages.
+ * Use IP addresses only for:
+ * - Rate limiting (processed in-memory, not persisted)
+ * - Security monitoring (with proper data retention policies)
+ *
+ * Never include IP addresses in:
+ * - Console logs or debug statements
+ * - Error messages sent to clients
+ * - External service payloads (GitHub issues, ClickUp tasks, etc.)
+ * - Any persistent storage without explicit user consent and data protection measures
  */
 function getClientIP(request: NextRequest): string {
   const forwardedFor = request.headers.get('x-forwarded-for');
