@@ -1,5 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import { EnhancedBugReport, GitHubIssue } from './types';
+import { redactEmail } from './utils/redact-email';
 
 const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN
@@ -9,6 +10,7 @@ const owner = process.env.GITHUB_OWNER || '';
 const repo = process.env.GITHUB_REPO || '';
 
 export async function createGitHubIssue(enhancedReport: EnhancedBugReport): Promise<string> {
+  // Email is redacted using redactEmail() to protect user privacy (PII) in public GitHub issues
   const issueBody = `## Bug Report
 
 ### Description
@@ -31,7 +33,7 @@ ${enhancedReport.technicalContext}
 - **Category**: ${enhancedReport.category}
 - **Environment**: ${enhancedReport.environment || 'Not provided'}
 - **Browser**: ${enhancedReport.browserInfo || 'Not provided'}
-${enhancedReport.userEmail ? `- **Reporter**: ${enhancedReport.userEmail}` : ''}
+${enhancedReport.userEmail ? `- **Reporter**: ${redactEmail(enhancedReport.userEmail)}` : ''}
 
 ---
 
