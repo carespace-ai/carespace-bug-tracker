@@ -123,6 +123,8 @@ export default function Home() {
 
         {submitResult && (
           <div
+            role="status"
+            aria-live="polite"
             className={`mb-6 p-4 rounded-lg ${
               submitResult.success
                 ? 'bg-green-50 border border-green-200'
@@ -145,6 +147,7 @@ export default function Home() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-green-900"
+                    aria-label="View bug report on GitHub (opens in new tab)"
                   >
                     View Issue
                   </a>
@@ -156,6 +159,7 @@ export default function Home() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-green-900"
+                    aria-label="View bug report task on ClickUp (opens in new tab)"
                   >
                     View Task
                   </a>
