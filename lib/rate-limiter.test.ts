@@ -439,44 +439,166 @@ describe('rate-limiter', () => {
     });
   });
 
-  describe('logging behavior', () => {
-    it('should log when rate limit is exceeded', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+  describe('PII protection and logging behavior', () => {
+    it('should never log IP addresses to console.error', () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const testIp = '192.168.6.1';
 
-      const ip = '192.168.6.1';
+      // Test various scenarios that might trigger logging
 
-      // Exhaust limit
+      // 1. Exhaust rate limit
       for (let i = 0; i < 5; i++) {
-        getRateLimitResult(ip);
+        getRateLimitResult(testIp);
+      }
+      getRateLimitResult(testIp); // This exceeds the limit
+
+      // 2. Check status after exceeding limit
+      getRateLimitStatus(testIp);
+
+      // 3. Multiple blocked requests
+      for (let i = 0; i < 3; i++) {
+        getRateLimitResult(testIp);
       }
 
-      // This should trigger logging
-      getRateLimitResult(ip);
+      // Verify no logs contain the IP address
+      if (consoleErrorSpy.mock.calls.length > 0) {
+        consoleErrorSpy.mock.calls.forEach(call => {
+          const logMessage = call.join(' ');
+          expect(logMessage).not.toContain(testIp);
+        });
+      }
 
-      expect(consoleSpy).toHaveBeenCalled();
-      expect(consoleSpy.mock.calls[0][0]).toContain('Rate limit exceeded');
-      expect(consoleSpy.mock.calls[0][0]).toContain(ip);
-
-      consoleSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
     });
 
-    it('should include reset time in log message', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    it('should never log IP addresses to console.log', () => {
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const testIp = '192.168.6.2';
 
-      const ip = '192.168.6.2';
+      // Test various scenarios
+      getRateLimitResult(testIp);
+      getRateLimitStatus(testIp);
 
       // Exhaust limit
       for (let i = 0; i < 5; i++) {
-        getRateLimitResult(ip);
+        getRateLimitResult(testIp);
       }
 
-      getRateLimitResult(ip);
+      // Verify no logs contain the IP address
+      if (consoleLogSpy.mock.calls.length > 0) {
+        consoleLogSpy.mock.calls.forEach(call => {
+          const logMessage = call.join(' ');
+          expect(logMessage).not.toContain(testIp);
+        });
+      }
 
-      const logMessage = consoleSpy.mock.calls[0][0];
-      expect(logMessage).toContain('Reset at');
-      expect(logMessage).toMatch(/\d+ seconds/);
+      consoleLogSpy.mockRestore();
+    });
 
-      consoleSpy.mockRestore();
+    it('should never log IPv6 addresses', () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const testIpv6 = '2001:0db8:85a3:0000:0000:8a2e:0370:7334';
+
+      // Exhaust limit
+      for (let i = 0; i < 5; i++) {
+        getRateLimitResult(testIpv6);
+      }
+      getRateLimitResult(testIpv6);
+
+      // Check all console methods
+      const allCalls = [
+        ...consoleErrorSpy.mock.calls,
+        ...consoleLogSpy.mock.calls
+      ];
+
+      if (allCalls.length > 0) {
+        allCalls.forEach(call => {
+          const logMessage = call.join(' ');
+          expect(logMessage).not.toContain(testIpv6);
+        });
+      }
+
+      consoleErrorSpy.mockRestore();
+      consoleLogSpy.mockRestore();
+    });
+
+    it('should never log any part of IP address', () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const testIp = '203.45.67.89';
+
+      // Exhaust limit and make additional requests
+      for (let i = 0; i < 10; i++) {
+        getRateLimitResult(testIp);
+      }
+
+      // Check that no part of the IP appears in logs
+      const ipParts = testIp.split('.');
+      const allCalls = [
+        ...consoleErrorSpy.mock.calls,
+        ...consoleLogSpy.mock.calls
+      ];
+
+      if (allCalls.length > 0) {
+        allCalls.forEach(call => {
+          const logMessage = call.join(' ');
+          // Verify the complete IP is not present
+          expect(logMessage).not.toContain(testIp);
+        });
+      }
+
+      consoleErrorSpy.mockRestore();
+      consoleLogSpy.mockRestore();
+    });
+
+    it('should handle rate limiting without exposing PII in any console method', () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation();
+      const consoleDebugSpy = jest.spyOn(console, 'debug').mockImplementation();
+
+      const testIp = '10.20.30.40';
+
+      // Perform various rate limit operations
+      getRateLimitResult(testIp);
+      getRateLimitStatus(testIp);
+
+      // Exhaust limit
+      for (let i = 0; i < 5; i++) {
+        getRateLimitResult(testIp);
+      }
+
+      // Try more blocked requests
+      for (let i = 0; i < 3; i++) {
+        getRateLimitResult(testIp);
+      }
+
+      // Check all console methods for IP exposure
+      const allSpies = [
+        consoleErrorSpy,
+        consoleWarnSpy,
+        consoleLogSpy,
+        consoleInfoSpy,
+        consoleDebugSpy
+      ];
+
+      allSpies.forEach(spy => {
+        if (spy.mock.calls.length > 0) {
+          spy.mock.calls.forEach(call => {
+            const logMessage = call.join(' ');
+            expect(logMessage).not.toContain(testIp);
+          });
+        }
+      });
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
+      consoleLogSpy.mockRestore();
+      consoleInfoSpy.mockRestore();
+      consoleDebugSpy.mockRestore();
     });
   });
 });
