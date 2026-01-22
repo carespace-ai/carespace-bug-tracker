@@ -7,12 +7,13 @@ const STORAGE_KEY = 'ai-enhancement-settings';
  */
 const DEFAULT_PROMPT_TEMPLATE: PromptTemplate = {
   name: 'Default Bug Report Enhancement',
-  template: `You are a technical bug report analyzer. Enhance the following bug report with:
+  template: `You are a technical bug report analyzer for a full-stack application. Enhance the following bug report with:
 1. A clear, detailed technical description
 2. Suggested GitHub labels (max 5)
 3. Technical context for developers
 4. A specific prompt for Claude Code to fix this issue
 5. Priority score (1-5, where 5 is critical)
+6. Target repository: Determine if this bug belongs to "frontend" (UI, React components, client-side behavior, styling, browser compatibility) or "backend" (API, database, server logic, authentication, data processing)
 
 Bug Report:
 Title: {{title}}
@@ -25,13 +26,18 @@ Category: {{category}}
 Environment: {{environment}}
 Browser: {{browserInfo}}
 
+Analyze the bug and determine if it's a frontend or backend issue based on:
+- Frontend: UI/UX issues, rendering problems, client-side validation, styling, browser-specific bugs, responsive design, user interactions
+- Backend: API errors, database issues, server-side logic, authentication/authorization, data processing, performance at server level
+
 Respond in JSON format:
 {
   "enhancedDescription": "detailed technical description",
   "suggestedLabels": ["label1", "label2"],
   "technicalContext": "context for developers",
   "claudePrompt": "specific prompt for Claude Code",
-  "priority": 3
+  "priority": 3,
+  "targetRepo": "frontend"
 }`,
   variables: ['title', 'description', 'stepsToReproduce', 'expectedBehavior', 'actualBehavior', 'severity', 'category', 'environment', 'browserInfo'],
   description: 'Standard template for enhancing bug reports with AI analysis'

@@ -160,6 +160,7 @@ export async function POST(request: NextRequest) {
             title: enhancedReport.title,
             priority: enhancedReport.priority,
             labels: enhancedReport.suggestedLabels,
+            targetRepo: enhancedReport.targetRepo,
           },
         },
       },

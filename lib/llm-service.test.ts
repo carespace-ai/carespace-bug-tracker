@@ -79,6 +79,7 @@ describe('llm-service integration tests', () => {
             technicalContext: 'Security context',
             claudePrompt: 'Fix this security issue',
             priority: 5,
+            targetRepo: 'backend',
           }),
         }],
       });
@@ -1059,6 +1060,149 @@ describe('llm-service integration tests', () => {
 
       // Should load settings once
       expect(mockLoadSettings).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('repository routing', () => {
+    it('should determine frontend repo for UI bugs', async () => {
+      const uiBugReport: BugReport = {
+        title: 'Button not clickable',
+        description: 'The submit button is not responding to clicks',
+        severity: 'high',
+        category: 'ui',
+      };
+
+      mockCreate.mockResolvedValue({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            enhancedDescription: 'UI interaction issue',
+            suggestedLabels: ['ui', 'bug'],
+            technicalContext: 'Frontend button click handler',
+            claudePrompt: 'Fix the button click handler',
+            priority: 4,
+            targetRepo: 'frontend',
+          }),
+        }],
+      });
+
+      const result = await enhanceBugReport(uiBugReport);
+      expect(result.targetRepo).toBe('frontend');
+    });
+
+    it('should determine backend repo for API bugs', async () => {
+      const apiBugReport: BugReport = {
+        title: 'API endpoint returns 500 error',
+        description: 'The /api/users endpoint is failing',
+        severity: 'critical',
+        category: 'functionality',
+      };
+
+      mockCreate.mockResolvedValue({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            enhancedDescription: 'Server-side API error',
+            suggestedLabels: ['backend', 'api', 'critical'],
+            technicalContext: 'Backend API endpoint error',
+            claudePrompt: 'Fix the API endpoint error handling',
+            priority: 5,
+            targetRepo: 'backend',
+          }),
+        }],
+      });
+
+      const result = await enhanceBugReport(apiBugReport);
+      expect(result.targetRepo).toBe('backend');
+    });
+
+    it('should fallback to category-based routing when AI does not provide targetRepo', async () => {
+      const bugReport: BugReport = {
+        title: 'Test bug',
+        description: 'Test description',
+        severity: 'medium',
+        category: 'ui',
+      };
+
+      mockCreate.mockResolvedValue({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            enhancedDescription: 'Enhanced',
+            suggestedLabels: ['ui'],
+            technicalContext: 'Context',
+            claudePrompt: 'Prompt',
+            priority: 3,
+            // targetRepo not provided
+          }),
+        }],
+      });
+
+      const result = await enhanceBugReport(bugReport);
+      expect(result.targetRepo).toBe('frontend'); // UI category defaults to frontend
+    });
+
+    it('should use category-based fallback when API fails', async () => {
+      mockCreate.mockRejectedValue(new Error('API error'));
+
+      const uiBug: BugReport = {
+        title: 'UI Test',
+        description: 'UI bug',
+        severity: 'medium',
+        category: 'ui',
+      };
+      expect((await enhanceBugReport(uiBug)).targetRepo).toBe('frontend');
+
+      const securityBug: BugReport = {
+        title: 'Security Test',
+        description: 'Security bug',
+        severity: 'critical',
+        category: 'security',
+      };
+      expect((await enhanceBugReport(securityBug)).targetRepo).toBe('backend');
+
+      const performanceBug: BugReport = {
+        title: 'Performance Test',
+        description: 'Performance bug',
+        severity: 'high',
+        category: 'performance',
+      };
+      expect((await enhanceBugReport(performanceBug)).targetRepo).toBe('backend');
+
+      const functionalityBug: BugReport = {
+        title: 'Functionality Test',
+        description: 'Functionality bug',
+        severity: 'medium',
+        category: 'functionality',
+      };
+      expect((await enhanceBugReport(functionalityBug)).targetRepo).toBe('frontend');
+    });
+
+    it('should correct invalid targetRepo values from AI', async () => {
+      const bugReport: BugReport = {
+        title: 'Test',
+        description: 'Test',
+        severity: 'medium',
+        category: 'security',
+      };
+
+      mockCreate.mockResolvedValue({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            enhancedDescription: 'Enhanced',
+            suggestedLabels: ['test'],
+            technicalContext: 'Context',
+            claudePrompt: 'Prompt',
+            priority: 3,
+            targetRepo: 'invalid-repo', // Invalid value
+          }),
+        }],
+      });
+
+      const result = await enhanceBugReport(bugReport);
+      // Should fallback to category-based determination
+      expect(result.targetRepo).toBe('backend'); // security category defaults to backend
     });
   });
 });

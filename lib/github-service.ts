@@ -6,7 +6,14 @@ const octokit = new Octokit({
 });
 
 const owner = process.env.GITHUB_OWNER || '';
-const repo = process.env.GITHUB_REPO || '';
+const defaultRepo = process.env.GITHUB_REPO || '';
+
+// Repository configuration
+const REPOS = {
+  frontend: process.env.GITHUB_REPO_FRONTEND || 'carespace-frontend',
+  backend: process.env.GITHUB_REPO_BACKEND || 'carespace-backend',
+  attachments: defaultRepo || 'carespace-bug-tracker' // Keep using bug tracker repo for attachments
+};
 
 /**
  * Uploads a file to the GitHub repository and returns its raw URL
@@ -31,10 +38,10 @@ export async function uploadFileToGitHub(
     // Convert file content to base64 as required by GitHub API
     const content = fileContent.toString('base64');
 
-    // Upload file to repository
+    // Upload file to repository (using attachments repo)
     const response = await octokit.repos.createOrUpdateFileContents({
       owner,
-      repo,
+      repo: REPOS.attachments,
       path: filepath,
       message: `Upload bug report attachment: ${filename}`,
       content,
@@ -49,7 +56,7 @@ export async function uploadFileToGitHub(
     // Return the raw content URL
     // Format: https://raw.githubusercontent.com/{owner}/{repo}/main/{filepath}
     const branch = 'main'; // Default branch, could be made configurable
-    return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filepath}`;
+    return `https://raw.githubusercontent.com/${owner}/${REPOS.attachments}/${branch}/${filepath}`;
   } catch (error) {
     console.error(`${logPrefix} Error uploading file to GitHub:`, error);
     throw new Error(`Failed to upload file to GitHub: ${filename}`);
@@ -89,6 +96,10 @@ export async function uploadFilesToGitHub(
 export async function createGitHubIssue(enhancedReport: EnhancedBugReport, correlationId?: string): Promise<string> {
   const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
 
+  // Determine target repository based on AI analysis
+  const targetRepo = REPOS[enhancedReport.targetRepo];
+  console.log(`${logPrefix} Creating issue in repository: ${owner}/${targetRepo} (${enhancedReport.targetRepo})`);
+
   // Format attachments section
   let attachmentsSection = '';
   if (enhancedReport.attachments && enhancedReport.attachments.length > 0) {
@@ -119,6 +130,7 @@ ${enhancedReport.technicalContext}
 ### Environment
 - **Severity**: ${enhancedReport.severity}
 - **Category**: ${enhancedReport.category}
+- **Repository**: ${enhancedReport.targetRepo}
 - **Environment**: ${enhancedReport.environment || 'Not provided'}
 - **Browser**: ${enhancedReport.browserInfo || 'Not provided'}
 ${enhancedReport.userEmail ? `- **Reporter**: ${enhancedReport.userEmail}` : ''}
@@ -131,26 +143,33 @@ ${enhancedReport.claudePrompt}
 \`\`\`
 
 ---
-*This issue was automatically created from a customer bug report.*`;
+*This issue was automatically created from a customer bug report and routed to the ${enhancedReport.targetRepo} repository.*`;
 
   try {
     const response = await octokit.issues.create({
       owner,
-      repo,
+      repo: targetRepo,
       title: enhancedReport.title,
       body: issueBody,
       labels: enhancedReport.suggestedLabels,
     });
 
+    console.log(`${logPrefix} Successfully created issue in ${owner}/${targetRepo}: ${response.data.html_url}`);
     return response.data.html_url;
   } catch (error) {
-    console.error(`${logPrefix} Error creating GitHub issue:`, error);
-    throw new Error('Failed to create GitHub issue');
+    console.error(`${logPrefix} Error creating GitHub issue in ${owner}/${targetRepo}:`, error);
+    throw new Error(`Failed to create GitHub issue in ${targetRepo} repository`);
   }
 }
 
-export async function addCommentToIssue(issueNumber: number, comment: string, correlationId?: string): Promise<void> {
+export async function addCommentToIssue(
+  issueNumber: number,
+  comment: string,
+  targetRepo: 'frontend' | 'backend' = 'frontend',
+  correlationId?: string
+): Promise<void> {
   const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
+  const repo = REPOS[targetRepo];
 
   try {
     await octokit.issues.createComment({
@@ -160,7 +179,7 @@ export async function addCommentToIssue(issueNumber: number, comment: string, co
       body: comment
     });
   } catch (error) {
-    console.error(`${logPrefix} Error adding comment to issue:`, error);
-    throw new Error('Failed to add comment to GitHub issue');
+    console.error(`${logPrefix} Error adding comment to issue in ${owner}/${repo}:`, error);
+    throw new Error(`Failed to add comment to GitHub issue in ${targetRepo} repository`);
   }
 }

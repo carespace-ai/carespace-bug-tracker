@@ -23,6 +23,7 @@ export interface EnhancedBugReport extends BugReport {
   technicalContext: string;
   claudePrompt: string;
   priority: number;
+  targetRepo: 'frontend' | 'backend';
 }
 
 export interface GitHubIssue {
@@ -50,6 +51,7 @@ export interface SubmitBugResponse {
       title: string;
       priority: number;
       labels: string[];
+      targetRepo: 'frontend' | 'backend';
     };
   };
 }

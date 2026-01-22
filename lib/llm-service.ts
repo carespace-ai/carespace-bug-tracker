@@ -118,6 +118,29 @@ function calculatePriority(severity: BugReport['severity'], settings: ReturnType
 }
 
 /**
+ * Determine target repository based on bug category as fallback
+ */
+function determineRepoFromCategory(category: BugReport['category']): 'frontend' | 'backend' {
+  switch (category) {
+    case 'ui':
+      return 'frontend';
+    case 'performance':
+      // Performance could be either, default to backend
+      return 'backend';
+    case 'security':
+      // Security could be either, default to backend
+      return 'backend';
+    case 'functionality':
+      // Functionality could be either, default to frontend (most user-facing issues)
+      return 'frontend';
+    case 'other':
+    default:
+      // Default to frontend for unknown categories
+      return 'frontend';
+  }
+}
+
+/**
  * Filter suggested labels to only include labels from configured taxonomy
  * Also applies auto-suggestion rules based on bug report content
  */
@@ -191,13 +214,21 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
       bugReport
     );
 
+    // Determine target repository with fallback logic
+    let targetRepo: 'frontend' | 'backend' = enhanced.targetRepo || 'frontend';
+    if (targetRepo !== 'frontend' && targetRepo !== 'backend') {
+      // If AI returns invalid value, use category-based fallback
+      targetRepo = determineRepoFromCategory(bugReport.category);
+    }
+
     return {
       ...bugReport,
       enhancedDescription: enhanced.enhancedDescription,
       suggestedLabels: filteredLabels,
       technicalContext: enhanced.technicalContext,
       claudePrompt: styledPrompt,
-      priority: calculatePriority(bugReport.severity, settings)
+      priority: calculatePriority(bugReport.severity, settings),
+      targetRepo
     };
   } catch (error) {
     // Check if this is a timeout error
@@ -231,7 +262,8 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
       suggestedLabels: filteredFallbackLabels,
       technicalContext: `Category: ${sanitizedBugReport.category}, Severity: ${sanitizedBugReport.severity}`,
       claudePrompt: styledFallbackPrompt,
-      priority: calculatePriority(sanitizedBugReport.severity, settings)
+      priority: calculatePriority(sanitizedBugReport.severity, settings),
+      targetRepo: determineRepoFromCategory(sanitizedBugReport.category)
     };
   }
 }
