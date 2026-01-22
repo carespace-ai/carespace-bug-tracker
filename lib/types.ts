@@ -40,33 +40,16 @@ export interface ClickUpTask {
   tags: string[];
 }
 
-export interface PromptTemplate {
-  name: string;
-  template: string;
-  variables: string[];
-  description?: string;
-}
-
-export interface LabelTaxonomy {
-  labels: string[];
-  autoSuggestionRules?: {
-    keywords: string[];
-    suggestedLabel: string;
-  }[];
-}
-
-export interface PriorityWeights {
-  critical: number;
-  high: number;
-  medium: number;
-  low: number;
-}
-
-export type ClaudePromptStyle = 'verbose' | 'concise' | 'technical' | 'beginner-friendly';
-
-export interface AIEnhancementSettings {
-  promptTemplate: PromptTemplate;
-  labelTaxonomy: LabelTaxonomy;
-  priorityWeights: PriorityWeights;
-  claudePromptStyle: ClaudePromptStyle;
+export interface SubmitBugResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    githubIssue: string;
+    clickupTask: string;
+    enhancedReport: {
+      title: string;
+      priority: number;
+      labels: string[];
+    };
+  };
 }

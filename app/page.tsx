@@ -1,14 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BugReport } from '@/lib/types';
+import { BugReport, SubmitBugResponse } from '@/lib/types';
 import { detectBrowserInfo } from '@/lib/browser-detection';
-
-// Character limits for textarea fields
-const DESCRIPTION_MAX_LENGTH = 2000;
-const STEPS_MAX_LENGTH = 1500;
-const EXPECTED_BEHAVIOR_MAX_LENGTH = 1000;
-const ACTUAL_BEHAVIOR_MAX_LENGTH = 1000;
+import { useFieldValidation } from '@/lib/hooks/useFieldValidation';
 
 export default function Home() {
   const [formData, setFormData] = useState<Partial<BugReport>>({
@@ -26,11 +21,16 @@ export default function Home() {
 
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitResult, setSubmitResult] = useState<{
-    success: boolean;
-    message: string;
-    data?: any;
-  } | null>(null);
+  const [submitResult, setSubmitResult] = useState<SubmitBugResponse | null>(null);
+
+  // Initialize field validation hook for real-time validation
+  const {
+    validateField,
+    getFieldError,
+    markFieldTouched,
+    isFieldValid,
+    touchedFields,
+  } = useFieldValidation();
 
   useEffect(() => {
     const browserInfo = detectBrowserInfo();
@@ -95,7 +95,7 @@ export default function Home() {
           message: result.error || 'Failed to submit bug report',
         });
       }
-    } catch (error) {
+    } catch {
       setSubmitResult({
         success: false,
         message: 'Network error. Please try again.',
@@ -106,10 +106,21 @@ export default function Home() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
+    // Validate field in real-time if it has been touched
+    if (touchedFields[name]) {
+      validateField(name, value);
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    markFieldTouched(name);
+    validateField(name, value);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -164,16 +175,6 @@ export default function Home() {
     const sizes = ['Bytes', 'KB', 'MB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
-
-  const getCharacterCountColor = (currentLength: number, maxLength: number): string => {
-    const percentage = (currentLength / maxLength) * 100;
-    if (percentage >= 100) {
-      return 'text-red-600';
-    } else if (percentage >= 90) {
-      return 'text-yellow-600';
-    }
-    return 'text-gray-500';
   };
 
   return (
@@ -240,16 +241,35 @@ export default function Home() {
             <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
               Bug Title *
             </label>
-            <input
-              type="text"
-              id="title"
-              name="title"
-              required
-              value={formData.title}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="Brief description of the bug"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                id="title"
+                name="title"
+                required
+                value={formData.title}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                  getFieldError('title')
+                    ? 'border-red-300 focus:ring-red-500'
+                    : isFieldValid('title')
+                    ? 'border-green-300 focus:ring-green-500'
+                    : 'border-gray-300 focus:ring-indigo-500'
+                }`}
+                placeholder="Brief description of the bug"
+              />
+              {isFieldValid('title') && (
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </div>
+            {getFieldError('title') && (
+              <p className="mt-1 text-sm text-red-600">{getFieldError('title')}</p>
+            )}
           </div>
 
           {/* Description */}
@@ -257,20 +277,35 @@ export default function Home() {
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
               Description *
             </label>
-            <textarea
-              id="description"
-              name="description"
-              required
-              value={formData.description}
-              onChange={handleChange}
-              rows={4}
-              maxLength={DESCRIPTION_MAX_LENGTH}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="Detailed description of the bug"
-            />
-            <p className={`mt-1 text-xs ${getCharacterCountColor(formData.description?.length || 0, DESCRIPTION_MAX_LENGTH)}`}>
-              {formData.description?.length || 0}/{DESCRIPTION_MAX_LENGTH}
-            </p>
+            <div className="relative">
+              <textarea
+                id="description"
+                name="description"
+                required
+                value={formData.description}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                rows={4}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                  getFieldError('description')
+                    ? 'border-red-300 focus:ring-red-500'
+                    : isFieldValid('description')
+                    ? 'border-green-300 focus:ring-green-500'
+                    : 'border-gray-300 focus:ring-indigo-500'
+                }`}
+                placeholder="Detailed description of the bug"
+              />
+              {isFieldValid('description') && (
+                <div className="absolute top-3 right-3 pointer-events-none">
+                  <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </div>
+            {getFieldError('description') && (
+              <p className="mt-1 text-sm text-red-600">{getFieldError('description')}</p>
+            )}
           </div>
 
           {/* Steps to Reproduce */}
@@ -284,13 +319,9 @@ export default function Home() {
               value={formData.stepsToReproduce}
               onChange={handleChange}
               rows={3}
-              maxLength={STEPS_MAX_LENGTH}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="1. Go to...\n2. Click on...\n3. See error"
             />
-            <p className={`mt-1 text-xs ${getCharacterCountColor(formData.stepsToReproduce?.length || 0, STEPS_MAX_LENGTH)}`}>
-              {formData.stepsToReproduce?.length || 0}/{STEPS_MAX_LENGTH}
-            </p>
           </div>
 
           {/* Expected vs Actual Behavior */}
@@ -305,13 +336,9 @@ export default function Home() {
                 value={formData.expectedBehavior}
                 onChange={handleChange}
                 rows={3}
-                maxLength={EXPECTED_BEHAVIOR_MAX_LENGTH}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="What should happen?"
               />
-              <p className={`mt-1 text-xs ${getCharacterCountColor(formData.expectedBehavior?.length || 0, EXPECTED_BEHAVIOR_MAX_LENGTH)}`}>
-                {formData.expectedBehavior?.length || 0}/{EXPECTED_BEHAVIOR_MAX_LENGTH}
-              </p>
             </div>
             <div>
               <label htmlFor="actualBehavior" className="block text-sm font-medium text-gray-700 mb-2">
@@ -323,13 +350,9 @@ export default function Home() {
                 value={formData.actualBehavior}
                 onChange={handleChange}
                 rows={3}
-                maxLength={ACTUAL_BEHAVIOR_MAX_LENGTH}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="What actually happens?"
               />
-              <p className={`mt-1 text-xs ${getCharacterCountColor(formData.actualBehavior?.length || 0, ACTUAL_BEHAVIOR_MAX_LENGTH)}`}>
-                {formData.actualBehavior?.length || 0}/{ACTUAL_BEHAVIOR_MAX_LENGTH}
-              </p>
             </div>
           </div>
 
@@ -380,15 +403,34 @@ export default function Home() {
               <label htmlFor="userEmail" className="block text-sm font-medium text-gray-700 mb-2">
                 Your Email
               </label>
-              <input
-                type="email"
-                id="userEmail"
-                name="userEmail"
-                value={formData.userEmail}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="your@email.com"
-              />
+              <div className="relative">
+                <input
+                  type="email"
+                  id="userEmail"
+                  name="userEmail"
+                  value={formData.userEmail}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                    getFieldError('userEmail')
+                      ? 'border-red-300 focus:ring-red-500'
+                      : isFieldValid('userEmail')
+                      ? 'border-green-300 focus:ring-green-500'
+                      : 'border-gray-300 focus:ring-indigo-500'
+                  }`}
+                  placeholder="your@email.com"
+                />
+                {isFieldValid('userEmail') && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              {getFieldError('userEmail') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('userEmail')}</p>
+              )}
             </div>
             <div>
               <label htmlFor="environment" className="block text-sm font-medium text-gray-700 mb-2">

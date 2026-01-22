@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
 import { enhanceBugReport } from '@/lib/llm-service';
-import { createGitHubIssue } from '@/lib/github-service';
+import { createGitHubIssue, uploadFilesToGitHub } from '@/lib/github-service';
 import { createClickUpTask } from '@/lib/clickup-service';
 import { BugReport } from '@/lib/types';
 import { getRateLimitResult } from '@/lib/rate-limiter';
-
-const bugReportSchema = z.object({
-  title: z.string().min(5, 'Title must be at least 5 characters'),
-  description: z.string().min(10, 'Description must be at least 10 characters'),
-  stepsToReproduce: z.string().optional(),
-  expectedBehavior: z.string().optional(),
-  actualBehavior: z.string().optional(),
-  severity: z.enum(['low', 'medium', 'high', 'critical']),
-  category: z.enum(['ui', 'functionality', 'performance', 'security', 'other']),
-  userEmail: z.string().email().optional(),
-  environment: z.string().optional(),
-  browserInfo: z.string().optional(),
-});
+import { bugReportSchema } from '@/lib/validation/bug-report-schema';
 
 /**
  * Helper function to generate rate limit headers
@@ -72,7 +59,62 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
+    // Parse FormData instead of JSON
+    const formData = await request.formData();
+
+    // Extract form fields from FormData
+    const body = {
+      title: formData.get('title') as string,
+      description: formData.get('description') as string,
+      stepsToReproduce: formData.get('stepsToReproduce') as string | undefined,
+      expectedBehavior: formData.get('expectedBehavior') as string | undefined,
+      actualBehavior: formData.get('actualBehavior') as string | undefined,
+      severity: formData.get('severity') as string,
+      category: formData.get('category') as string,
+      userEmail: formData.get('userEmail') as string | undefined,
+      environment: formData.get('environment') as string | undefined,
+      browserInfo: formData.get('browserInfo') as string | undefined,
+    };
+
+    // Extract file attachments
+    const attachments = formData.getAll('attachments') as File[];
+
+    // Validate file attachments
+    const maxFileCount = 5;
+    const maxFileSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'video/mp4',
+      'video/quicktime',
+      'text/plain',
+      'application/pdf',
+      'application/json'
+    ];
+
+    if (attachments.length > maxFileCount) {
+      return NextResponse.json(
+        { error: `Too many files. Maximum ${maxFileCount} files allowed.` },
+        { status: 400, headers: getRateLimitHeaders(rateLimitResult) }
+      );
+    }
+
+    for (const file of attachments) {
+      if (file.size > maxFileSize) {
+        return NextResponse.json(
+          { error: `File ${file.name} exceeds maximum size of 10MB` },
+          { status: 400, headers: getRateLimitHeaders(rateLimitResult) }
+        );
+      }
+      if (!allowedTypes.includes(file.type)) {
+        return NextResponse.json(
+          { error: `File ${file.name} has unsupported type ${file.type}` },
+          { status: 400, headers: getRateLimitHeaders(rateLimitResult) }
+        );
+      }
+    }
 
     // Validate input
     const validationResult = bugReportSchema.safeParse(body);
@@ -89,12 +131,22 @@ export async function POST(request: NextRequest) {
     const bugReport: BugReport = validationResult.data;
 
     // Step 1: Enhance bug report with LLM
+    console.log('Enhancing bug report with LLM...');
     const enhancedReport = await enhanceBugReport(bugReport);
 
-    // Step 2: Create GitHub issue
+    // Step 2: Upload attachments to GitHub (if any)
+    if (attachments.length > 0) {
+      console.log(`Uploading ${attachments.length} attachments to GitHub...`);
+      const uploadedAttachments = await uploadFilesToGitHub(attachments);
+      enhancedReport.attachments = uploadedAttachments;
+    }
+
+    // Step 3: Create GitHub issue
+    console.log('Creating GitHub issue...');
     const githubIssueUrl = await createGitHubIssue(enhancedReport);
 
-    // Step 3: Create ClickUp task
+    // Step 4: Create ClickUp task
+    console.log('Creating ClickUp task...');
     const clickupTaskUrl = await createClickUpTask(enhancedReport, githubIssueUrl);
 
     return NextResponse.json(
