@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BugReport } from '@/lib/types';
+import { detectBrowserInfo } from '@/lib/browser-detection';
 
 export default function Home() {
   const [formData, setFormData] = useState<Partial<BugReport>>({
@@ -24,6 +25,14 @@ export default function Home() {
     message: string;
     data?: any;
   } | null>(null);
+
+  useEffect(() => {
+    const browserInfo = detectBrowserInfo();
+    setFormData((prev) => ({
+      ...prev,
+      browserInfo,
+    }));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
