@@ -3,19 +3,21 @@
 import { useState } from 'react';
 import { BugReport } from '@/lib/types';
 
+const INITIAL_FORM_STATE: Partial<BugReport> = {
+  title: '',
+  description: '',
+  stepsToReproduce: '',
+  expectedBehavior: '',
+  actualBehavior: '',
+  severity: 'medium',
+  category: 'functionality',
+  userEmail: '',
+  environment: '',
+  browserInfo: '',
+};
+
 export default function Home() {
-  const [formData, setFormData] = useState<Partial<BugReport>>({
-    title: '',
-    description: '',
-    stepsToReproduce: '',
-    expectedBehavior: '',
-    actualBehavior: '',
-    severity: 'medium',
-    category: 'functionality',
-    userEmail: '',
-    environment: '',
-    browserInfo: '',
-  });
+  const [formData, setFormData] = useState<Partial<BugReport>>(INITIAL_FORM_STATE);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<{
@@ -47,18 +49,7 @@ export default function Home() {
           data: result.data,
         });
         // Reset form
-        setFormData({
-          title: '',
-          description: '',
-          stepsToReproduce: '',
-          expectedBehavior: '',
-          actualBehavior: '',
-          severity: 'medium',
-          category: 'functionality',
-          userEmail: '',
-          environment: '',
-          browserInfo: '',
-        });
+        setFormData(INITIAL_FORM_STATE);
       } else {
         setSubmitResult({
           success: false,
