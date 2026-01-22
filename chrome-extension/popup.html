@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carespace Bug Reporter</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <img src="images/logo.svg" alt="Carespace" class="logo">
+      <h1>Bug Reporter</h1>
+      <p class="subtitle">Report bugs and we'll process them automatically with AI</p>
+    </div>
+
+    <!-- Result Message -->
+    <div id="result" class="hidden"></div>
+
+    <!-- Bug Report Form -->
+    <form id="bugForm">
+      <!-- Title -->
+      <div class="form-group">
+        <label for="title">Bug Title *</label>
+        <input
+          type="text"
+          id="title"
+          name="title"
+          placeholder="Brief description of the bug"
+          required
+        >
+      </div>
+
+      <!-- Description -->
+      <div class="form-group">
+        <label for="description">Description *</label>
+        <textarea
+          id="description"
+          name="description"
+          rows="4"
+          placeholder="Detailed description of the bug"
+          required
+        ></textarea>
+      </div>
+
+      <!-- Steps to Reproduce -->
+      <div class="form-group">
+        <label for="stepsToReproduce">Steps to Reproduce</label>
+        <textarea
+          id="stepsToReproduce"
+          name="stepsToReproduce"
+          rows="3"
+          placeholder="1. Go to...&#10;2. Click on...&#10;3. See error"
+        ></textarea>
+      </div>
+
+      <!-- Expected vs Actual Behavior -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="expectedBehavior">Expected Behavior</label>
+          <textarea
+            id="expectedBehavior"
+            name="expectedBehavior"
+            rows="2"
+            placeholder="What should happen?"
+          ></textarea>
+        </div>
+        <div class="form-group">
+          <label for="actualBehavior">Actual Behavior</label>
+          <textarea
+            id="actualBehavior"
+            name="actualBehavior"
+            rows="2"
+            placeholder="What actually happens?"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Severity and Category -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="severity">Severity *</label>
+          <select id="severity" name="severity" required>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="category">Category *</label>
+          <select id="category" name="category" required>
+            <option value="functionality">Functionality</option>
+            <option value="ui">UI</option>
+            <option value="performance">Performance</option>
+            <option value="security">Security</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="userEmail">Your Email (optional)</label>
+        <input
+          type="email"
+          id="userEmail"
+          name="userEmail"
+          placeholder="your@email.com"
+        >
+      </div>
+
+      <!-- Screenshot Capture -->
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="captureScreenshot" checked>
+          <span>Include screenshot of current page</span>
+        </label>
+      </div>
+
+      <!-- File Attachments -->
+      <div class="form-group">
+        <label for="attachments">Additional Attachments</label>
+        <input
+          type="file"
+          id="attachments"
+          name="attachments"
+          multiple
+          accept="image/*,video/mp4,video/quicktime,.txt,.log,.pdf,.json"
+        >
+        <p class="help-text">Max 10MB per file (JPG, PNG, GIF, WebP, MP4, MOV, TXT, LOG, PDF, JSON)</p>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" id="submitBtn" class="btn-primary">
+        <span id="submitText">Submit Bug Report</span>
+        <span id="submitSpinner" class="spinner hidden"></span>
+      </button>
+    </form>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>Powered by Carespace AI Bug Tracker</p>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

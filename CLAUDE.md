@@ -31,21 +31,46 @@ npm test lib/rate-limiter.test.ts                    # Single test file
 npm test -- --testNamePattern="should validate"      # Specific test pattern
 ```
 
+## Chrome Extension
+
+A Chrome extension is available in the `chrome-extension/` folder that integrates with the bug tracker API.
+
+**Features:**
+- Click extension icon or right-click to report bugs
+- Auto-capture screenshots of current page
+- Pre-fill page context (URL, title, selected text)
+- Full integration with AI enhancement pipeline
+
+**Setup:**
+```bash
+# 1. Load extension in Chrome
+# - Go to chrome://extensions/
+# - Enable "Developer mode"
+# - Click "Load unpacked"
+# - Select the chrome-extension/ folder
+
+# 2. Extension uses API at localhost:3000 by default
+# For production, edit chrome-extension/popup.js line 2
+```
+
+**See `chrome-extension/README.md` for full documentation.**
+
 ## Architecture Overview
 
 ### Request Flow
-1. **User submits bug** → `app/page.tsx` (form) → `POST /api/submit-bug`
-2. **Rate limiting** → `lib/rate-limiter.ts` (5 req/15min per IP, in-memory)
-3. **Validation** → `lib/validation/bug-report-schema.ts` (Zod schema)
-4. **File uploads** → `lib/github-service.ts` uploads to GitHub repo (attachments stored in `carespace-bug-tracker`)
-5. **AI Enhancement** → `lib/llm-service.ts` (Claude 3.5 Sonnet)
+1. **User submits bug** → `app/page.tsx` (web form) OR `chrome-extension/popup.html` (extension) → `POST /api/submit-bug`
+2. **CORS handling** → `middleware.ts` (allows chrome-extension:// origins)
+3. **Rate limiting** → `lib/rate-limiter.ts` (5 req/15min per IP, in-memory)
+4. **Validation** → `lib/validation/bug-report-schema.ts` (Zod schema)
+5. **File uploads** → `lib/github-service.ts` uploads to GitHub repo (attachments stored in `carespace-bug-tracker`)
+6. **AI Enhancement** → `lib/llm-service.ts` (Claude 3.5 Sonnet)
    - Enhances description with technical context
    - Generates suggested labels
    - Creates Claude Code prompt for developers
    - Assigns priority score
    - **Determines target repository** (frontend vs backend)
-6. **Parallel Creation** → GitHub issue (routed to correct repo) + ClickUp task created simultaneously
-7. **Response** → Returns links to both created items
+7. **Parallel Creation** → GitHub issue (routed to correct repo) + ClickUp task created simultaneously
+8. **Response** → Returns links to both created items
 
 ### Key Service Pattern
 
