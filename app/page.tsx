@@ -419,6 +419,8 @@ export default function Home() {
           <button
             type="submit"
             disabled={isSubmitting}
+            aria-busy={isSubmitting}
+            aria-label={isSubmitting ? "Submitting bug report, please wait" : "Submit bug report"}
             className="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? (
