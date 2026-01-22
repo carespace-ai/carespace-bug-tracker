@@ -140,10 +140,10 @@ export default function Home() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white shadow-xl rounded-lg p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-8 space-y-6">
           {/* Title */}
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Bug Title *
             </label>
             <input
@@ -153,14 +153,14 @@ export default function Home() {
               required
               value={formData.title}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
               placeholder="Brief description of the bug"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Description *
             </label>
             <textarea
@@ -170,14 +170,14 @@ export default function Home() {
               value={formData.description}
               onChange={handleChange}
               rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
               placeholder="Detailed description of the bug"
             />
           </div>
 
           {/* Steps to Reproduce */}
           <div>
-            <label htmlFor="stepsToReproduce" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="stepsToReproduce" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Steps to Reproduce
             </label>
             <textarea
@@ -186,7 +186,7 @@ export default function Home() {
               value={formData.stepsToReproduce}
               onChange={handleChange}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
               placeholder="1. Go to...\n2. Click on...\n3. See error"
             />
           </div>
@@ -194,7 +194,7 @@ export default function Home() {
           {/* Expected vs Actual Behavior */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="expectedBehavior" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="expectedBehavior" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Expected Behavior
               </label>
               <textarea
@@ -203,12 +203,12 @@ export default function Home() {
                 value={formData.expectedBehavior}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
                 placeholder="What should happen?"
               />
             </div>
             <div>
-              <label htmlFor="actualBehavior" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="actualBehavior" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Actual Behavior
               </label>
               <textarea
@@ -217,7 +217,7 @@ export default function Home() {
                 value={formData.actualBehavior}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
                 placeholder="What actually happens?"
               />
             </div>
@@ -226,7 +226,7 @@ export default function Home() {
           {/* Severity and Category */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="severity" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="severity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Severity *
               </label>
               <select
@@ -235,7 +235,7 @@ export default function Home() {
                 required
                 value={formData.severity}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -244,7 +244,7 @@ export default function Home() {
               </select>
             </div>
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Category *
               </label>
               <select
@@ -253,7 +253,7 @@ export default function Home() {
                 required
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
               >
                 <option value="ui">UI</option>
                 <option value="functionality">Functionality</option>
@@ -267,7 +267,7 @@ export default function Home() {
           {/* Contact and Environment */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="userEmail" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="userEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Your Email
               </label>
               <input
@@ -276,12 +276,12 @@ export default function Home() {
                 name="userEmail"
                 value={formData.userEmail}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
                 placeholder="your@email.com"
               />
             </div>
             <div>
-              <label htmlFor="environment" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="environment" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Environment
               </label>
               <input
@@ -290,7 +290,7 @@ export default function Home() {
                 name="environment"
                 value={formData.environment}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
                 placeholder="Production, Staging, etc."
               />
             </div>
@@ -298,7 +298,7 @@ export default function Home() {
 
           {/* Browser Info */}
           <div>
-            <label htmlFor="browserInfo" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="browserInfo" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Browser Information
             </label>
             <input
@@ -307,7 +307,7 @@ export default function Home() {
               name="browserInfo"
               value={formData.browserInfo}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
               placeholder="Chrome 120, Safari 17, etc."
             />
           </div>
@@ -332,7 +332,7 @@ export default function Home() {
           </button>
         </form>
 
-        <div className="mt-8 text-center text-sm text-gray-600">
+        <div className="mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
           <p>Your bug report will be automatically:</p>
           <ul className="mt-2 space-y-1">
             <li>✨ Enhanced with AI analysis</li>
