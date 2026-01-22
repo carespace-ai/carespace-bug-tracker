@@ -1,0 +1,10 @@
+This is a placeholder for a screenshot file.
+
+For actual E2E testing, please use a real PNG or JPG screenshot.
+You can use any screenshot from your computer or create one by:
+1. Taking a screenshot of any application
+2. Saving it as PNG or JPG format
+3. Using it for testing the file attachment feature
+
+This text file is here to demonstrate the file structure.
+File type: Text (can be uploaded as a log file)
