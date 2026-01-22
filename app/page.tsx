@@ -23,6 +23,44 @@ export default function Home() {
     message: string;
     data?: any;
   } | null>(null);
+  const [showDraftRestored, setShowDraftRestored] = useState(false);
+
+  // Load draft from localStorage on component mount
+  useEffect(() => {
+    try {
+      const savedDraft = localStorage.getItem('bugReportDraft');
+      if (savedDraft) {
+        const parsedDraft = JSON.parse(savedDraft);
+        // Check if draft has meaningful content
+        const hasContent = parsedDraft.title || parsedDraft.description || parsedDraft.stepsToReproduce;
+        if (hasContent) {
+          setFormData(parsedDraft);
+          setShowDraftRestored(true);
+        }
+      }
+    } catch (error) {
+      // Silently fail if localStorage is not available or data is corrupted
+    }
+  }, []);
+
+  // Save draft to localStorage on every formData change
+  useEffect(() => {
+    try {
+      localStorage.setItem('bugReportDraft', JSON.stringify(formData));
+    } catch (error) {
+      // Silently fail if localStorage is not available
+    }
+  }, [formData]);
+
+  // Auto-dismiss draft restored banner after 5 seconds
+  useEffect(() => {
+    if (showDraftRestored) {
+      const timer = setTimeout(() => {
+        setShowDraftRestored(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showDraftRestored]);
 
   // Auto-detect browser and environment info on mount
   useEffect(() => {
@@ -78,6 +116,12 @@ export default function Home() {
           environment: '',
           browserInfo: '',
         });
+        // Clear draft from localStorage
+        try {
+          localStorage.removeItem('bugReportDraft');
+        } catch (error) {
+          // Silently fail if localStorage is not available
+        }
       } else {
         setSubmitResult({
           success: false,
@@ -108,6 +152,24 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-gray-900 mb-2">🐛 Carespace Bug Tracker</h1>
           <p className="text-gray-600">Report bugs and we\'ll process them automatically</p>
         </div>
+
+        {showDraftRestored && (
+          <div className="mb-6 p-4 rounded-lg bg-blue-50 border border-blue-200 flex items-start justify-between">
+            <div className="flex items-start">
+              <span className="text-blue-600 mr-2">ℹ️</span>
+              <p className="font-semibold text-blue-800">
+                Draft restored! Your previous form data has been loaded.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowDraftRestored(false)}
+              className="text-blue-600 hover:text-blue-800 ml-4 flex-shrink-0"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {submitResult && (
           <div
