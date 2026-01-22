@@ -1,10 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { BugReport } from '@/lib/types';
 import { detectBrowserInfo } from '@/lib/browser-detection';
-import FormFieldTooltip from '@/lib/components/FormFieldTooltip';
-import { formFieldHelp } from '@/lib/data/form-field-help';
+
+// Character limits for textarea fields
+const DESCRIPTION_MAX_LENGTH = 2000;
+const STEPS_MAX_LENGTH = 1500;
+const EXPECTED_BEHAVIOR_MAX_LENGTH = 1000;
+const ACTUAL_BEHAVIOR_MAX_LENGTH = 1000;
 
 export default function Home() {
   const [formData, setFormData] = useState<Partial<BugReport>>({
@@ -27,7 +31,6 @@ export default function Home() {
     message: string;
     data?: any;
   } | null>(null);
-  const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const browserInfo = detectBrowserInfo();
@@ -36,16 +39,6 @@ export default function Home() {
       browserInfo,
     }));
   }, []);
-
-  // Scroll result message into view on mobile when it appears
-  useEffect(() => {
-    if (submitResult && resultRef.current) {
-      resultRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest'
-      });
-    }
-  }, [submitResult]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,18 +166,27 @@ export default function Home() {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
+  const getCharacterCountColor = (currentLength: number, maxLength: number): string => {
+    const percentage = (currentLength / maxLength) * 100;
+    if (percentage >= 100) {
+      return 'text-red-600';
+    } else if (percentage >= 90) {
+      return 'text-yellow-600';
+    }
+    return 'text-gray-500';
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-6 md:py-12 px-3 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-4 md:mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">🐛 Carespace Bug Tracker</h1>
-          <p className="text-sm md:text-base text-gray-600">Report bugs and we\'ll process them automatically</p>
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">🐛 Carespace Bug Tracker</h1>
+          <p className="text-gray-600">Report bugs and we\'ll process them automatically</p>
         </div>
 
         {submitResult && (
           <div
-            ref={resultRef}
-            className={`mb-4 md:mb-6 p-3 md:p-4 rounded-lg ${
+            className={`mb-6 p-4 rounded-lg ${
               submitResult.success
                 ? 'bg-green-50 border border-green-200'
                 : 'bg-red-50 border border-red-200'
@@ -198,14 +200,14 @@ export default function Home() {
               {submitResult.message}
             </p>
             {submitResult.success && submitResult.data && (
-              <div className="mt-3 space-y-2 text-sm md:text-base">
+              <div className="mt-3 space-y-2 text-sm">
                 <p className="text-green-700">
                   <strong>GitHub Issue:</strong>{' '}
                   <a
                     href={submitResult.data.githubIssue}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block underline hover:text-green-900 min-h-[44px] py-2 touch-manipulation"
+                    className="underline hover:text-green-900"
                   >
                     View Issue
                   </a>
@@ -216,7 +218,7 @@ export default function Home() {
                     href={submitResult.data.clickupTask}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block underline hover:text-green-900 min-h-[44px] py-2 touch-manipulation"
+                    className="underline hover:text-green-900"
                   >
                     View Task
                   </a>
@@ -232,16 +234,12 @@ export default function Home() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white shadow-xl rounded-lg p-4 md:p-8 space-y-4 md:space-y-6">
+        <form onSubmit={handleSubmit} className="bg-white shadow-xl rounded-lg p-8 space-y-6">
           {/* Title */}
           <div>
-            <FormFieldTooltip
-              label="Bug Title"
-              tooltipContent={formFieldHelp.title.description}
-              htmlFor="title"
-              required
-              className="mb-2"
-            />
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+              Bug Title *
+            </label>
             <input
               type="text"
               id="title"
@@ -249,20 +247,16 @@ export default function Home() {
               required
               value={formData.title}
               onChange={handleChange}
-              className="w-full px-4 py-3 min-h-[44px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="Brief description of the bug"
             />
           </div>
 
           {/* Description */}
           <div>
-            <FormFieldTooltip
-              label="Description"
-              tooltipContent={formFieldHelp.description.description}
-              htmlFor="description"
-              required
-              className="mb-2"
-            />
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              Description *
+            </label>
             <textarea
               id="description"
               name="description"
@@ -270,86 +264,88 @@ export default function Home() {
               value={formData.description}
               onChange={handleChange}
               rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              maxLength={DESCRIPTION_MAX_LENGTH}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="Detailed description of the bug"
             />
+            <p className={`mt-1 text-xs ${getCharacterCountColor(formData.description?.length || 0, DESCRIPTION_MAX_LENGTH)}`}>
+              {formData.description?.length || 0}/{DESCRIPTION_MAX_LENGTH}
+            </p>
           </div>
 
           {/* Steps to Reproduce */}
           <div>
-            <FormFieldTooltip
-              label="Steps to Reproduce"
-              tooltipContent={formFieldHelp.stepsToReproduce.description}
-              htmlFor="stepsToReproduce"
-              className="mb-2"
-            />
+            <label htmlFor="stepsToReproduce" className="block text-sm font-medium text-gray-700 mb-2">
+              Steps to Reproduce
+            </label>
             <textarea
               id="stepsToReproduce"
               name="stepsToReproduce"
               value={formData.stepsToReproduce}
               onChange={handleChange}
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              maxLength={STEPS_MAX_LENGTH}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="1. Go to...\n2. Click on...\n3. See error"
             />
+            <p className={`mt-1 text-xs ${getCharacterCountColor(formData.stepsToReproduce?.length || 0, STEPS_MAX_LENGTH)}`}>
+              {formData.stepsToReproduce?.length || 0}/{STEPS_MAX_LENGTH}
+            </p>
           </div>
 
           {/* Expected vs Actual Behavior */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <FormFieldTooltip
-                label="Expected Behavior"
-                tooltipContent={formFieldHelp.expectedBehavior.description}
-                htmlFor="expectedBehavior"
-                className="mb-2"
-              />
+              <label htmlFor="expectedBehavior" className="block text-sm font-medium text-gray-700 mb-2">
+                Expected Behavior
+              </label>
               <textarea
                 id="expectedBehavior"
                 name="expectedBehavior"
                 value={formData.expectedBehavior}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                maxLength={EXPECTED_BEHAVIOR_MAX_LENGTH}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="What should happen?"
               />
+              <p className={`mt-1 text-xs ${getCharacterCountColor(formData.expectedBehavior?.length || 0, EXPECTED_BEHAVIOR_MAX_LENGTH)}`}>
+                {formData.expectedBehavior?.length || 0}/{EXPECTED_BEHAVIOR_MAX_LENGTH}
+              </p>
             </div>
             <div>
-              <FormFieldTooltip
-                label="Actual Behavior"
-                tooltipContent={formFieldHelp.actualBehavior.description}
-                htmlFor="actualBehavior"
-                className="mb-2"
-              />
+              <label htmlFor="actualBehavior" className="block text-sm font-medium text-gray-700 mb-2">
+                Actual Behavior
+              </label>
               <textarea
                 id="actualBehavior"
                 name="actualBehavior"
                 value={formData.actualBehavior}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                maxLength={ACTUAL_BEHAVIOR_MAX_LENGTH}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="What actually happens?"
               />
+              <p className={`mt-1 text-xs ${getCharacterCountColor(formData.actualBehavior?.length || 0, ACTUAL_BEHAVIOR_MAX_LENGTH)}`}>
+                {formData.actualBehavior?.length || 0}/{ACTUAL_BEHAVIOR_MAX_LENGTH}
+              </p>
             </div>
           </div>
 
           {/* Severity and Category */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <FormFieldTooltip
-                label="Severity"
-                tooltipContent={formFieldHelp.severity.description}
-                htmlFor="severity"
-                required
-                className="mb-2"
-              />
+              <label htmlFor="severity" className="block text-sm font-medium text-gray-700 mb-2">
+                Severity *
+              </label>
               <select
                 id="severity"
                 name="severity"
                 required
                 value={formData.severity}
                 onChange={handleChange}
-                className="w-full px-4 py-3 min-h-[48px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white cursor-pointer touch-manipulation"
-                style={{ touchAction: 'manipulation' }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -358,21 +354,16 @@ export default function Home() {
               </select>
             </div>
             <div>
-              <FormFieldTooltip
-                label="Category"
-                tooltipContent={formFieldHelp.category.description}
-                htmlFor="category"
-                required
-                className="mb-2"
-              />
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+                Category *
+              </label>
               <select
                 id="category"
                 name="category"
                 required
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full px-4 py-3 min-h-[48px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white cursor-pointer touch-manipulation"
-                style={{ touchAction: 'manipulation' }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
                 <option value="ui">UI</option>
                 <option value="functionality">Functionality</option>
@@ -384,38 +375,32 @@ export default function Home() {
           </div>
 
           {/* Contact and Environment */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <FormFieldTooltip
-                label="Your Email"
-                tooltipContent={formFieldHelp.userEmail.description}
-                htmlFor="userEmail"
-                className="mb-2"
-              />
+              <label htmlFor="userEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                Your Email
+              </label>
               <input
                 type="email"
                 id="userEmail"
                 name="userEmail"
                 value={formData.userEmail}
                 onChange={handleChange}
-                className="w-full px-4 py-3 min-h-[44px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="your@email.com"
               />
             </div>
             <div>
-              <FormFieldTooltip
-                label="Environment"
-                tooltipContent={formFieldHelp.environment.description}
-                htmlFor="environment"
-                className="mb-2"
-              />
+              <label htmlFor="environment" className="block text-sm font-medium text-gray-700 mb-2">
+                Environment
+              </label>
               <input
                 type="text"
                 id="environment"
                 name="environment"
                 value={formData.environment}
                 onChange={handleChange}
-                className="w-full px-4 py-3 min-h-[44px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="Production, Staging, etc."
               />
             </div>
@@ -423,31 +408,25 @@ export default function Home() {
 
           {/* Browser Info */}
           <div>
-            <FormFieldTooltip
-              label="Browser Information"
-              tooltipContent={formFieldHelp.browserInfo.description}
-              htmlFor="browserInfo"
-              className="mb-2"
-            />
+            <label htmlFor="browserInfo" className="block text-sm font-medium text-gray-700 mb-2">
+              Browser Information
+            </label>
             <input
               type="text"
               id="browserInfo"
               name="browserInfo"
               value={formData.browserInfo}
               onChange={handleChange}
-              className="w-full px-4 py-3 min-h-[44px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="Chrome 120, Safari 17, etc."
             />
           </div>
 
           {/* File Attachments */}
           <div>
-            <FormFieldTooltip
-              label="Attachments"
-              tooltipContent={formFieldHelp.attachments.description}
-              htmlFor="attachments"
-              className="mb-2"
-            />
+            <label htmlFor="attachments" className="block text-sm font-medium text-gray-700 mb-2">
+              Attachments
+            </label>
             <div className="mt-1">
               <input
                 type="file"
@@ -456,25 +435,24 @@ export default function Home() {
                 onChange={handleFileChange}
                 multiple
                 accept="image/*,video/mp4,video/quicktime,text/plain,.log,application/pdf,application/json"
-                className="w-full px-4 py-3 min-h-[48px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent touch-manipulation file:mr-4 file:py-3 file:px-5 file:min-h-[44px] file:rounded-lg file:border-0 file:text-base file:font-semibold file:bg-indigo-50 file:text-indigo-700 file:cursor-pointer hover:file:bg-indigo-100 file:touch-manipulation"
-                style={{ touchAction: 'manipulation' }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
               />
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500">
                 Upload screenshots, videos, or log files (max 10MB per file, formats: JPG, PNG, GIF, WebP, MP4, MOV, TXT, LOG, PDF, JSON)
               </p>
             </div>
 
             {/* File Preview */}
             {attachments.length > 0 && (
-              <div className="mt-4 space-y-2 md:space-y-3">
+              <div className="mt-4 space-y-2">
                 {attachments.map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-2 md:p-3 bg-gray-50 rounded-lg border border-gray-200 gap-2 md:gap-3"
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
                   >
-                    <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
                       {file.type.startsWith('image/') ? (
-                        <div className="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded overflow-hidden bg-gray-200">
+                        <div className="flex-shrink-0 w-12 h-12 rounded overflow-hidden bg-gray-200">
                           <img
                             src={URL.createObjectURL(file)}
                             alt={file.name}
@@ -482,27 +460,23 @@ export default function Home() {
                           />
                         </div>
                       ) : (
-                        <div className="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded bg-indigo-100 flex items-center justify-center">
-                          <svg className="w-6 h-6 md:w-7 md:h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex-shrink-0 w-12 h-12 rounded bg-indigo-100 flex items-center justify-center">
+                          <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                           </svg>
                         </div>
                       )}
-                      <div className="flex-1 min-w-0 pr-1">
-                        <p className="text-sm md:text-base font-medium text-gray-900 truncate break-all" title={file.name}>
-                          {file.name}
-                        </p>
-                        <p className="text-xs md:text-sm text-gray-500 mt-0.5">{formatFileSize(file.size)}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                        <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => removeFile(index)}
-                      className="flex-shrink-0 min-w-[48px] min-h-[48px] md:min-w-[44px] md:min-h-[44px] flex items-center justify-center text-red-600 hover:text-red-800 hover:bg-red-50 active:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 rounded-lg transition-colors touch-manipulation"
-                      aria-label={`Remove ${file.name}`}
-                      style={{ touchAction: 'manipulation' }}
+                      className="flex-shrink-0 ml-4 text-red-600 hover:text-red-800 focus:outline-none"
                     >
-                      <svg className="w-6 h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
@@ -516,7 +490,7 @@ export default function Home() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full min-h-[44px] bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center">
@@ -532,7 +506,7 @@ export default function Home() {
           </button>
         </form>
 
-        <div className="mt-4 md:mt-8 text-center text-xs md:text-sm text-gray-600">
+        <div className="mt-8 text-center text-sm text-gray-600">
           <p>Your bug report will be automatically:</p>
           <ul className="mt-2 space-y-1">
             <li>✨ Enhanced with AI analysis</li>

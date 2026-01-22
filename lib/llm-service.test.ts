@@ -1,4 +1,4 @@
-import { BugReport } from './types';
+import { BugReport, AIEnhancementSettings } from './types';
 
 // Mock Anthropic before importing llm-service
 const mockCreate = jest.fn();
@@ -12,12 +12,47 @@ jest.mock('@anthropic-ai/sdk', () => {
   });
 });
 
+// Mock ai-settings module
+const mockLoadSettings = jest.fn();
+jest.mock('./ai-settings', () => ({
+  loadSettings: mockLoadSettings,
+}));
+
 import { enhanceBugReport } from './llm-service';
+import { getDefaultSettings } from './ai-settings';
 
 describe('llm-service integration tests', () => {
+  // Default settings used for most tests
+  const defaultSettings: AIEnhancementSettings = {
+    promptTemplate: {
+      name: 'Default Template',
+      template: 'Analyze this bug report:\n\nTitle: {{title}}\nDescription: {{description}}\nSeverity: {{severity}}\nCategory: {{category}}\n{{stepsToReproduce}}\n{{expectedBehavior}}\n{{actualBehavior}}\n{{environment}}\n{{browserInfo}}\n\nProvide enhancement in JSON format.',
+      variables: ['title', 'description', 'severity', 'category', 'stepsToReproduce', 'expectedBehavior', 'actualBehavior', 'environment', 'browserInfo'],
+      description: 'Default prompt template for testing'
+    },
+    labelTaxonomy: {
+      labels: ['bug', 'security', 'functionality', 'ui', 'other', 'critical', 'high', 'medium', 'low', 'mobile', 'login', 'payment', 'checkout', 'ux', 'notifications', 'label1', 'label2', 'label3', 'test', 'crash', 'system'],
+      autoSuggestionRules: [
+        { keywords: ['crash', 'error'], suggestedLabel: 'bug' },
+        { keywords: ['login', 'auth'], suggestedLabel: 'login' }
+      ]
+    },
+    priorityWeights: {
+      critical: 5,
+      high: 4,
+      medium: 3,
+      low: 2
+    },
+    claudePromptStyle: 'technical'
+  };
+
   beforeEach(() => {
-    // Reset mock between tests
+    // Reset mocks between tests
     mockCreate.mockClear();
+    mockLoadSettings.mockClear();
+
+    // Set default settings for all tests
+    mockLoadSettings.mockReturnValue(defaultSettings);
   });
 
   describe('end-to-end sanitization protection', () => {
@@ -235,7 +270,8 @@ describe('llm-service integration tests', () => {
       expect(result.enhancedDescription).toBe('Enhanced description of the login issue');
       expect(result.suggestedLabels).toEqual(['bug', 'mobile', 'login']);
       expect(result.technicalContext).toBe('Mobile UI interaction issue');
-      expect(result.claudePrompt).toBe('Fix the mobile login button click handler');
+      // Claude prompt is styled with the configured style, so check it contains the base prompt
+      expect(result.claudePrompt).toContain('Fix the mobile login button click handler');
       expect(result.priority).toBe(4);
     });
 
@@ -381,7 +417,7 @@ describe('llm-service integration tests', () => {
         severity: 'low',
         category: 'other',
       };
-      expect((await enhanceBugReport(lowBug)).priority).toBe(3);
+      expect((await enhanceBugReport(lowBug)).priority).toBe(2);
     });
 
     it('should handle unexpected response format gracefully', async () => {
@@ -595,8 +631,10 @@ describe('llm-service integration tests', () => {
       expect(result.enhancedDescription).toBe(mockEnhanced.enhancedDescription);
       expect(result.suggestedLabels).toEqual(mockEnhanced.suggestedLabels);
       expect(result.technicalContext).toBe(mockEnhanced.technicalContext);
-      expect(result.claudePrompt).toBe(mockEnhanced.claudePrompt);
-      expect(result.priority).toBe(mockEnhanced.priority);
+      // Claude prompt is styled with the configured style, so check it contains the base prompt
+      expect(result.claudePrompt).toContain(mockEnhanced.claudePrompt);
+      // Priority should be calculated from severity and configured weights, not from API response
+      expect(result.priority).toBe(3); // medium = 3
     });
 
     it('should extract JSON from markdown code blocks', async () => {
@@ -624,8 +662,403 @@ describe('llm-service integration tests', () => {
 
       const result = await enhanceBugReport(bugReport);
 
-      expect(result.priority).toBe(5);
+      // Priority should be calculated from severity and configured weights, not from API response
+      expect(result.priority).toBe(4); // high = 4
       expect(result.suggestedLabels).toEqual(['security', 'high']);
+    });
+  });
+
+  describe('configuration support', () => {
+    it('should use custom prompt template from settings', async () => {
+      const customSettings: AIEnhancementSettings = {
+        ...defaultSettings,
+        promptTemplate: {
+          name: 'Custom Template',
+          template: 'CUSTOM PROMPT: {{title}} - {{description}}',
+          variables: ['title', 'description'],
+          description: 'Custom test template'
+        }
+      };
+      mockLoadSettings.mockReturnValue(customSettings);
+
+      const bugReport: BugReport = {
+        title: 'Custom Test',
+        description: 'Custom Description',
+        severity: 'medium',
+        category: 'ui',
+      };
+
+      mockCreate.mockResolvedValue({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            enhancedDescription: 'Enhanced',
+            suggestedLabels: ['ui'],
+            technicalContext: 'Context',
+            claudePrompt: 'Prompt',
+            priority: 3,
+          }),
+        }],
+      });
+
+      await enhanceBugReport(bugReport);
+
+      // Verify the custom template was used in the API call
+      expect(mockCreate).toHaveBeenCalledTimes(1);
+      const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+      expect(prompt).toContain('CUSTOM PROMPT:');
+      expect(prompt).toContain('Custom Test');
+      expect(prompt).toContain('Custom Description');
+    });
+
+    it('should filter labels according to configured taxonomy', async () => {
+      const customSettings: AIEnhancementSettings = {
+        ...defaultSettings,
+        labelTaxonomy: {
+          labels: ['approved-label-1', 'approved-label-2'],
+          autoSuggestionRules: []
+        }
+      };
+      mockLoadSettings.mockReturnValue(customSettings);
+
+      const bugReport: BugReport = {
+        title: 'Test',
+        description: 'Test',
+        severity: 'medium',
+        category: 'ui',
+      };
+
+      mockCreate.mockResolvedValue({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            enhancedDescription: 'Enhanced',
+            suggestedLabels: ['approved-label-1', 'not-in-taxonomy', 'approved-label-2', 'also-not-approved'],
+            technicalContext: 'Context',
+            claudePrompt: 'Prompt',
+            priority: 3,
+          }),
+        }],
+      });
+
+      const result = await enhanceBugReport(bugReport);
+
+      // Should only include labels from the configured taxonomy
+      expect(result.suggestedLabels).toEqual(['approved-label-1', 'approved-label-2']);
+      expect(result.suggestedLabels).not.toContain('not-in-taxonomy');
+      expect(result.suggestedLabels).not.toContain('also-not-approved');
+    });
+
+    it('should apply auto-suggestion rules from label taxonomy', async () => {
+      const customSettings: AIEnhancementSettings = {
+        ...defaultSettings,
+        labelTaxonomy: {
+          labels: ['bug', 'crash', 'performance'],
+          autoSuggestionRules: [
+            { keywords: ['crash', 'fail'], suggestedLabel: 'crash' },
+            { keywords: ['slow', 'timeout'], suggestedLabel: 'performance' }
+          ]
+        }
+      };
+      mockLoadSettings.mockReturnValue(customSettings);
+
+      const bugReport: BugReport = {
+        title: 'App crash on startup',
+        description: 'The application crashes when loading',
+        severity: 'high',
+        category: 'functionality',
+      };
+
+      mockCreate.mockResolvedValue({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            enhancedDescription: 'Enhanced',
+            suggestedLabels: ['bug'],
+            technicalContext: 'Context',
+            claudePrompt: 'Prompt',
+            priority: 4,
+          }),
+        }],
+      });
+
+      const result = await enhanceBugReport(bugReport);
+
+      // Should include auto-suggested 'crash' label based on keywords
+      expect(result.suggestedLabels).toContain('crash');
+      expect(result.suggestedLabels).toContain('bug');
+    });
+
+    it('should calculate priority using custom weights', async () => {
+      const customSettings: AIEnhancementSettings = {
+        ...defaultSettings,
+        priorityWeights: {
+          critical: 10,
+          high: 7,
+          medium: 4,
+          low: 1
+        }
+      };
+      mockLoadSettings.mockReturnValue(customSettings);
+
+      mockCreate.mockResolvedValue({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            enhancedDescription: 'Enhanced',
+            suggestedLabels: ['test'],
+            technicalContext: 'Context',
+            claudePrompt: 'Prompt',
+            priority: 999, // This should be ignored
+          }),
+        }],
+      });
+
+      const criticalBug: BugReport = {
+        title: 'Critical',
+        description: 'Critical bug',
+        severity: 'critical',
+        category: 'security',
+      };
+      expect((await enhanceBugReport(criticalBug)).priority).toBe(10);
+
+      const highBug: BugReport = {
+        title: 'High',
+        description: 'High bug',
+        severity: 'high',
+        category: 'functionality',
+      };
+      expect((await enhanceBugReport(highBug)).priority).toBe(7);
+
+      const mediumBug: BugReport = {
+        title: 'Medium',
+        description: 'Medium bug',
+        severity: 'medium',
+        category: 'ui',
+      };
+      expect((await enhanceBugReport(mediumBug)).priority).toBe(4);
+
+      const lowBug: BugReport = {
+        title: 'Low',
+        description: 'Low bug',
+        severity: 'low',
+        category: 'other',
+      };
+      expect((await enhanceBugReport(lowBug)).priority).toBe(1);
+    });
+
+    it('should apply verbose Claude prompt style', async () => {
+      const customSettings: AIEnhancementSettings = {
+        ...defaultSettings,
+        claudePromptStyle: 'verbose'
+      };
+      mockLoadSettings.mockReturnValue(customSettings);
+
+      const bugReport: BugReport = {
+        title: 'Test Bug',
+        description: 'Test Description',
+        severity: 'high',
+        category: 'functionality',
+        stepsToReproduce: 'Step 1, Step 2',
+        expectedBehavior: 'Should work',
+        actualBehavior: 'Does not work'
+      };
+
+      mockCreate.mockResolvedValue({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            enhancedDescription: 'Enhanced',
+            suggestedLabels: ['test'],
+            technicalContext: 'Context',
+            claudePrompt: 'Fix this issue',
+            priority: 4,
+          }),
+        }],
+      });
+
+      const result = await enhanceBugReport(bugReport);
+
+      // Verbose style should include detailed context
+      expect(result.claudePrompt).toContain('Context:');
+      expect(result.claudePrompt).toContain('Bug Title:');
+      expect(result.claudePrompt).toContain('Severity:');
+      expect(result.claudePrompt).toContain('Root cause analysis');
+      expect(result.claudePrompt).toContain('Testing recommendations');
+    });
+
+    it('should apply concise Claude prompt style', async () => {
+      const customSettings: AIEnhancementSettings = {
+        ...defaultSettings,
+        claudePromptStyle: 'concise'
+      };
+      mockLoadSettings.mockReturnValue(customSettings);
+
+      const bugReport: BugReport = {
+        title: 'Test Bug',
+        description: 'Test Description',
+        severity: 'medium',
+        category: 'ui',
+      };
+
+      mockCreate.mockResolvedValue({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            enhancedDescription: 'Enhanced',
+            suggestedLabels: ['test'],
+            technicalContext: 'Context',
+            claudePrompt: 'Fix this issue',
+            priority: 3,
+          }),
+        }],
+      });
+
+      const result = await enhanceBugReport(bugReport);
+
+      // Concise style should be short and direct
+      expect(result.claudePrompt).toContain('Fix this issue');
+      expect(result.claudePrompt).toContain('Bug: Test Bug');
+      expect(result.claudePrompt.length).toBeLessThan(100);
+    });
+
+    it('should apply technical Claude prompt style', async () => {
+      const customSettings: AIEnhancementSettings = {
+        ...defaultSettings,
+        claudePromptStyle: 'technical'
+      };
+      mockLoadSettings.mockReturnValue(customSettings);
+
+      const bugReport: BugReport = {
+        title: 'Test Bug',
+        description: 'Test Description',
+        severity: 'high',
+        category: 'functionality',
+      };
+
+      mockCreate.mockResolvedValue({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            enhancedDescription: 'Enhanced',
+            suggestedLabels: ['test'],
+            technicalContext: 'Context',
+            claudePrompt: 'Fix this issue',
+            priority: 4,
+          }),
+        }],
+      });
+
+      const result = await enhanceBugReport(bugReport);
+
+      // Technical style should focus on implementation details
+      expect(result.claudePrompt).toContain('Technical Details:');
+      expect(result.claudePrompt).toContain('Issue:');
+      expect(result.claudePrompt).toContain('implementation details');
+      expect(result.claudePrompt).toContain('technical root cause');
+    });
+
+    it('should apply beginner-friendly Claude prompt style', async () => {
+      const customSettings: AIEnhancementSettings = {
+        ...defaultSettings,
+        claudePromptStyle: 'beginner-friendly'
+      };
+      mockLoadSettings.mockReturnValue(customSettings);
+
+      const bugReport: BugReport = {
+        title: 'Test Bug',
+        description: 'Test Description',
+        severity: 'medium',
+        category: 'ui',
+      };
+
+      mockCreate.mockResolvedValue({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            enhancedDescription: 'Enhanced',
+            suggestedLabels: ['test'],
+            technicalContext: 'Context',
+            claudePrompt: 'Fix this issue',
+            priority: 3,
+          }),
+        }],
+      });
+
+      const result = await enhanceBugReport(bugReport);
+
+      // Beginner-friendly style should include explanations
+      expect(result.claudePrompt).toContain('Problem Summary:');
+      expect(result.claudePrompt).toContain('Please provide:');
+      expect(result.claudePrompt).toContain('clear explanation');
+      expect(result.claudePrompt).toContain('Step-by-step');
+    });
+
+    it('should apply configured settings in fallback scenario', async () => {
+      const customSettings: AIEnhancementSettings = {
+        ...defaultSettings,
+        labelTaxonomy: {
+          labels: ['custom-label'],
+          autoSuggestionRules: []
+        },
+        priorityWeights: {
+          critical: 10,
+          high: 8,
+          medium: 5,
+          low: 2
+        },
+        claudePromptStyle: 'concise'
+      };
+      mockLoadSettings.mockReturnValue(customSettings);
+
+      const bugReport: BugReport = {
+        title: 'Fallback Test',
+        description: 'Testing fallback with custom settings',
+        severity: 'high',
+        category: 'security',
+      };
+
+      // Mock API failure to trigger fallback
+      mockCreate.mockRejectedValue(new Error('API error'));
+
+      const result = await enhanceBugReport(bugReport);
+
+      // Should use custom priority weights
+      expect(result.priority).toBe(8); // custom high weight
+
+      // Should filter fallback labels through custom taxonomy
+      // security and high are not in the custom taxonomy, so should be empty
+      expect(result.suggestedLabels).toEqual([]);
+
+      // Should apply custom Claude prompt style
+      expect(result.claudePrompt).toContain('Bug: Fallback Test');
+    });
+
+    it('should call loadSettings once per enhancement', async () => {
+      const bugReport: BugReport = {
+        title: 'Test',
+        description: 'Test',
+        severity: 'medium',
+        category: 'ui',
+      };
+
+      mockCreate.mockResolvedValue({
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            enhancedDescription: 'Enhanced',
+            suggestedLabels: ['ui'],
+            technicalContext: 'Context',
+            claudePrompt: 'Prompt',
+            priority: 3,
+          }),
+        }],
+      });
+
+      await enhanceBugReport(bugReport);
+
+      // Should load settings once
+      expect(mockLoadSettings).toHaveBeenCalledTimes(1);
     });
   });
 });

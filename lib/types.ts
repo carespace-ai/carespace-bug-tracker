@@ -40,26 +40,33 @@ export interface ClickUpTask {
   tags: string[];
 }
 
-export interface QueuedSubmission {
-  id: string;
-  bugReport: BugReport;
-  enhancedReport?: EnhancedBugReport;
-  status: 'pending' | 'retrying' | 'failed' | 'partial';
-  retryCount: number;
-  timestamp: number;
-  lastAttempt?: number;
-  errors: {
-    github?: string;
-    clickup?: string;
-    anthropic?: string;
-  };
-  successfulServices: {
-    github?: boolean;
-    clickup?: boolean;
-    anthropic?: boolean;
-  };
-  urls?: {
-    github?: string;
-    clickup?: string;
-  };
+export interface PromptTemplate {
+  name: string;
+  template: string;
+  variables: string[];
+  description?: string;
+}
+
+export interface LabelTaxonomy {
+  labels: string[];
+  autoSuggestionRules?: {
+    keywords: string[];
+    suggestedLabel: string;
+  }[];
+}
+
+export interface PriorityWeights {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
+export type ClaudePromptStyle = 'verbose' | 'concise' | 'technical' | 'beginner-friendly';
+
+export interface AIEnhancementSettings {
+  promptTemplate: PromptTemplate;
+  labelTaxonomy: LabelTaxonomy;
+  priorityWeights: PriorityWeights;
+  claudePromptStyle: ClaudePromptStyle;
 }

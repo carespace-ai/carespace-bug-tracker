@@ -1,7 +1,5 @@
 import { Octokit } from '@octokit/rest';
 import { EnhancedBugReport, GitHubIssue } from './types';
-import { retryWithBackoff } from './retry-handler';
-import { executeWithCircuitBreaker } from './circuit-breaker';
 
 const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN
@@ -14,32 +12,32 @@ const repo = process.env.GITHUB_REPO || '';
  * Uploads a file to the GitHub repository and returns its raw URL
  * @param fileContent - Buffer containing the file content
  * @param filename - Original filename
+ * @param correlationId - Optional correlation ID for request tracing
  * @returns Raw GitHub URL to the uploaded file
  */
 export async function uploadFileToGitHub(
   fileContent: Buffer,
-  filename: string
+  filename: string,
+  correlationId?: string
 ): Promise<string> {
-  // Create a unique path using timestamp to avoid conflicts
-  const timestamp = Date.now();
-  const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-  const filepath = `bug-attachments/${timestamp}-${sanitizedFilename}`;
-
-  // Convert file content to base64 as required by GitHub API
-  const content = fileContent.toString('base64');
+  const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
 
   try {
-    // Execute with circuit breaker and retry logic
-    const response = await executeWithCircuitBreaker('github-upload-file', async () => {
-      return await retryWithBackoff(async () => {
-        return await octokit.repos.createOrUpdateFileContents({
-          owner,
-          repo,
-          path: filepath,
-          message: `Upload bug report attachment: ${filename}`,
-          content,
-        });
-      });
+    // Create a unique path using timestamp to avoid conflicts
+    const timestamp = Date.now();
+    const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filepath = `bug-attachments/${timestamp}-${sanitizedFilename}`;
+
+    // Convert file content to base64 as required by GitHub API
+    const content = fileContent.toString('base64');
+
+    // Upload file to repository
+    const response = await octokit.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path: filepath,
+      message: `Upload bug report attachment: ${filename}`,
+      content,
     });
 
     // Get the SHA of the uploaded file to construct the raw URL
@@ -53,6 +51,7 @@ export async function uploadFileToGitHub(
     const branch = 'main'; // Default branch, could be made configurable
     return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filepath}`;
   } catch (error) {
+    console.error(`${logPrefix} Error uploading file to GitHub:`, error);
     throw new Error(`Failed to upload file to GitHub: ${filename}`);
   }
 }
@@ -60,10 +59,12 @@ export async function uploadFileToGitHub(
 /**
  * Uploads multiple files to GitHub repository
  * @param files - Array of File objects from FormData
+ * @param correlationId - Optional correlation ID for request tracing
  * @returns Array of attachment objects with name, size, type, and GitHub URL
  */
 export async function uploadFilesToGitHub(
-  files: File[]
+  files: File[],
+  correlationId?: string
 ): Promise<{ name: string; size: number; type: string; url: string }[]> {
   const uploadPromises = files.map(async (file) => {
     // Convert File to Buffer
@@ -71,7 +72,7 @@ export async function uploadFilesToGitHub(
     const buffer = Buffer.from(arrayBuffer);
 
     // Upload file and get URL
-    const url = await uploadFileToGitHub(buffer, file.name);
+    const url = await uploadFileToGitHub(buffer, file.name, correlationId);
 
     return {
       name: file.name,
@@ -85,7 +86,9 @@ export async function uploadFilesToGitHub(
   return Promise.all(uploadPromises);
 }
 
-export async function createGitHubIssue(enhancedReport: EnhancedBugReport): Promise<string> {
+export async function createGitHubIssue(enhancedReport: EnhancedBugReport, correlationId?: string): Promise<string> {
+  const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
+
   // Format attachments section
   let attachmentsSection = '';
   if (enhancedReport.attachments && enhancedReport.attachments.length > 0) {
@@ -131,39 +134,33 @@ ${enhancedReport.claudePrompt}
 *This issue was automatically created from a customer bug report.*`;
 
   try {
-    // Execute with circuit breaker and retry logic
-    const response = await executeWithCircuitBreaker('github-create-issue', async () => {
-      return await retryWithBackoff(async () => {
-        return await octokit.issues.create({
-          owner,
-          repo,
-          title: enhancedReport.title,
-          body: issueBody,
-          labels: enhancedReport.suggestedLabels,
-        });
-      });
+    const response = await octokit.issues.create({
+      owner,
+      repo,
+      title: enhancedReport.title,
+      body: issueBody,
+      labels: enhancedReport.suggestedLabels,
     });
 
     return response.data.html_url;
   } catch (error) {
+    console.error(`${logPrefix} Error creating GitHub issue:`, error);
     throw new Error('Failed to create GitHub issue');
   }
 }
 
-export async function addCommentToIssue(issueNumber: number, comment: string): Promise<void> {
+export async function addCommentToIssue(issueNumber: number, comment: string, correlationId?: string): Promise<void> {
+  const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
+
   try {
-    // Execute with circuit breaker and retry logic
-    await executeWithCircuitBreaker('github-add-comment', async () => {
-      return await retryWithBackoff(async () => {
-        return await octokit.issues.createComment({
-          owner,
-          repo,
-          issue_number: issueNumber,
-          body: comment
-        });
-      });
+    await octokit.issues.createComment({
+      owner,
+      repo,
+      issue_number: issueNumber,
+      body: comment
     });
   } catch (error) {
+    console.error(`${logPrefix} Error adding comment to issue:`, error);
     throw new Error('Failed to add comment to GitHub issue');
   }
 }

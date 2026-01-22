@@ -9,18 +9,10 @@ interface RequestLog {
   lastCleanup: number;
 }
 
-// Configuration from environment variables with defaults
-const RATE_LIMIT_WINDOW_MS = process.env.RATE_LIMIT_WINDOW_MS
-  ? parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10)
-  : 15 * 60 * 1000; // 15 minutes
-
-export const RATE_LIMIT_MAX_REQUESTS = process.env.RATE_LIMIT_MAX_REQUESTS
-  ? parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10)
-  : 5;
-
-const CLEANUP_INTERVAL_MS = process.env.CLEANUP_INTERVAL_MS
-  ? parseInt(process.env.CLEANUP_INTERVAL_MS, 10)
-  : 60 * 1000; // Clean up every minute
+// Configuration
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX_REQUESTS = 5;
+const CLEANUP_INTERVAL_MS = 60 * 1000; // Clean up every minute
 
 // In-memory storage
 const requestLogs = new Map<string, RequestLog>();
@@ -92,15 +84,6 @@ export function getRateLimitResult(ipAddress: string): RateLimitResult {
     // Rate limit exceeded
     const oldestTimestamp = Math.min(...log.timestamps);
     const resetTime = oldestTimestamp + RATE_LIMIT_WINDOW_MS;
-    const resetDate = new Date(resetTime);
-    const secondsUntilReset = Math.ceil((resetTime - now) / 1000);
-
-    console.error(
-      `Rate limit exceeded for IP ${ipAddress}. ` +
-      `Current requests: ${requestCount}/${RATE_LIMIT_MAX_REQUESTS}. ` +
-      `Reset at ${resetDate.toISOString()} (in ${secondsUntilReset} seconds).`
-    );
-
     return {
       allowed: false,
       remaining: 0,
