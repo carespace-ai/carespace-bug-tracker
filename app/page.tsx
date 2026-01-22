@@ -151,11 +151,16 @@ export default function Home() {
               id="title"
               name="title"
               required
+              aria-required="true"
+              aria-describedby="title-description"
               value={formData.title}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="Brief description of the bug"
             />
+            <p id="title-description" className="sr-only">
+              Provide a brief, clear title that summarizes the bug
+            </p>
           </div>
 
           {/* Description */}
@@ -167,12 +172,17 @@ export default function Home() {
               id="description"
               name="description"
               required
+              aria-required="true"
+              aria-describedby="description-description"
               value={formData.description}
               onChange={handleChange}
               rows={4}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="Detailed description of the bug"
             />
+            <p id="description-description" className="sr-only">
+              Provide a detailed description of the bug, including what went wrong
+            </p>
           </div>
 
           {/* Steps to Reproduce */}
@@ -183,12 +193,16 @@ export default function Home() {
             <textarea
               id="stepsToReproduce"
               name="stepsToReproduce"
+              aria-describedby="stepsToReproduce-description"
               value={formData.stepsToReproduce}
               onChange={handleChange}
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="1. Go to...\n2. Click on...\n3. See error"
             />
+            <p id="stepsToReproduce-description" className="sr-only">
+              List the steps needed to reproduce this bug
+            </p>
           </div>
 
           {/* Expected vs Actual Behavior */}
@@ -200,12 +214,16 @@ export default function Home() {
               <textarea
                 id="expectedBehavior"
                 name="expectedBehavior"
+                aria-describedby="expectedBehavior-description"
                 value={formData.expectedBehavior}
                 onChange={handleChange}
                 rows={3}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="What should happen?"
               />
+              <p id="expectedBehavior-description" className="sr-only">
+                Describe what you expected to happen
+              </p>
             </div>
             <div>
               <label htmlFor="actualBehavior" className="block text-sm font-medium text-gray-700 mb-2">
@@ -214,12 +232,16 @@ export default function Home() {
               <textarea
                 id="actualBehavior"
                 name="actualBehavior"
+                aria-describedby="actualBehavior-description"
                 value={formData.actualBehavior}
                 onChange={handleChange}
                 rows={3}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="What actually happens?"
               />
+              <p id="actualBehavior-description" className="sr-only">
+                Describe what actually happened instead
+              </p>
             </div>
           </div>
 
@@ -233,6 +255,8 @@ export default function Home() {
                 id="severity"
                 name="severity"
                 required
+                aria-required="true"
+                aria-describedby="severity-description"
                 value={formData.severity}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -242,6 +266,9 @@ export default function Home() {
                 <option value="high">High</option>
                 <option value="critical">Critical</option>
               </select>
+              <p id="severity-description" className="sr-only">
+                Select the severity level of this bug
+              </p>
             </div>
             <div>
               <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
@@ -251,6 +278,8 @@ export default function Home() {
                 id="category"
                 name="category"
                 required
+                aria-required="true"
+                aria-describedby="category-description"
                 value={formData.category}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -261,6 +290,9 @@ export default function Home() {
                 <option value="security">Security</option>
                 <option value="other">Other</option>
               </select>
+              <p id="category-description" className="sr-only">
+                Select the category that best describes this bug
+              </p>
             </div>
           </div>
 
@@ -274,11 +306,15 @@ export default function Home() {
                 type="email"
                 id="userEmail"
                 name="userEmail"
+                aria-describedby="userEmail-description"
                 value={formData.userEmail}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="your@email.com"
               />
+              <p id="userEmail-description" className="sr-only">
+                Optional: Provide your email for follow-up questions
+              </p>
             </div>
             <div>
               <label htmlFor="environment" className="block text-sm font-medium text-gray-700 mb-2">
@@ -288,11 +324,15 @@ export default function Home() {
                 type="text"
                 id="environment"
                 name="environment"
+                aria-describedby="environment-description"
                 value={formData.environment}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="Production, Staging, etc."
               />
+              <p id="environment-description" className="sr-only">
+                Specify the environment where the bug occurred
+              </p>
             </div>
           </div>
 
@@ -305,11 +345,15 @@ export default function Home() {
               type="text"
               id="browserInfo"
               name="browserInfo"
+              aria-describedby="browserInfo-description"
               value={formData.browserInfo}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="Chrome 120, Safari 17, etc."
             />
+            <p id="browserInfo-description" className="sr-only">
+              Specify the browser and version where the bug occurred
+            </p>
           </div>
 
           {/* Submit Button */}
