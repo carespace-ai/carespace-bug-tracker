@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { BugReport } from '@/lib/types';
 import { detectBrowserInfo } from '@/lib/browser-detection';
+import FormFieldTooltip from '@/lib/components/FormFieldTooltip';
+import { formFieldHelp } from '@/lib/data/form-field-help';
 
 export default function Home() {
   const [formData, setFormData] = useState<Partial<BugReport>>({
@@ -221,9 +223,13 @@ export default function Home() {
         <form onSubmit={handleSubmit} className="bg-white shadow-xl rounded-lg p-8 space-y-6">
           {/* Title */}
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-              Bug Title *
-            </label>
+            <FormFieldTooltip
+              label="Bug Title"
+              tooltipContent={formFieldHelp.title.description}
+              htmlFor="title"
+              required
+              className="mb-2"
+            />
             <input
               type="text"
               id="title"
@@ -238,9 +244,13 @@ export default function Home() {
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-              Description *
-            </label>
+            <FormFieldTooltip
+              label="Description"
+              tooltipContent={formFieldHelp.description.description}
+              htmlFor="description"
+              required
+              className="mb-2"
+            />
             <textarea
               id="description"
               name="description"
@@ -255,9 +265,12 @@ export default function Home() {
 
           {/* Steps to Reproduce */}
           <div>
-            <label htmlFor="stepsToReproduce" className="block text-sm font-medium text-gray-700 mb-2">
-              Steps to Reproduce
-            </label>
+            <FormFieldTooltip
+              label="Steps to Reproduce"
+              tooltipContent={formFieldHelp.stepsToReproduce.description}
+              htmlFor="stepsToReproduce"
+              className="mb-2"
+            />
             <textarea
               id="stepsToReproduce"
               name="stepsToReproduce"
@@ -272,9 +285,12 @@ export default function Home() {
           {/* Expected vs Actual Behavior */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="expectedBehavior" className="block text-sm font-medium text-gray-700 mb-2">
-                Expected Behavior
-              </label>
+              <FormFieldTooltip
+                label="Expected Behavior"
+                tooltipContent={formFieldHelp.expectedBehavior.description}
+                htmlFor="expectedBehavior"
+                className="mb-2"
+              />
               <textarea
                 id="expectedBehavior"
                 name="expectedBehavior"
@@ -286,9 +302,12 @@ export default function Home() {
               />
             </div>
             <div>
-              <label htmlFor="actualBehavior" className="block text-sm font-medium text-gray-700 mb-2">
-                Actual Behavior
-              </label>
+              <FormFieldTooltip
+                label="Actual Behavior"
+                tooltipContent={formFieldHelp.actualBehavior.description}
+                htmlFor="actualBehavior"
+                className="mb-2"
+              />
               <textarea
                 id="actualBehavior"
                 name="actualBehavior"
@@ -304,9 +323,13 @@ export default function Home() {
           {/* Severity and Category */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="severity" className="block text-sm font-medium text-gray-700 mb-2">
-                Severity *
-              </label>
+              <FormFieldTooltip
+                label="Severity"
+                tooltipContent={formFieldHelp.severity.description}
+                htmlFor="severity"
+                required
+                className="mb-2"
+              />
               <select
                 id="severity"
                 name="severity"
@@ -322,9 +345,13 @@ export default function Home() {
               </select>
             </div>
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-                Category *
-              </label>
+              <FormFieldTooltip
+                label="Category"
+                tooltipContent={formFieldHelp.category.description}
+                htmlFor="category"
+                required
+                className="mb-2"
+              />
               <select
                 id="category"
                 name="category"
@@ -345,9 +372,12 @@ export default function Home() {
           {/* Contact and Environment */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="userEmail" className="block text-sm font-medium text-gray-700 mb-2">
-                Your Email
-              </label>
+              <FormFieldTooltip
+                label="Your Email"
+                tooltipContent={formFieldHelp.userEmail.description}
+                htmlFor="userEmail"
+                className="mb-2"
+              />
               <input
                 type="email"
                 id="userEmail"
@@ -359,9 +389,12 @@ export default function Home() {
               />
             </div>
             <div>
-              <label htmlFor="environment" className="block text-sm font-medium text-gray-700 mb-2">
-                Environment
-              </label>
+              <FormFieldTooltip
+                label="Environment"
+                tooltipContent={formFieldHelp.environment.description}
+                htmlFor="environment"
+                className="mb-2"
+              />
               <input
                 type="text"
                 id="environment"
@@ -376,9 +409,12 @@ export default function Home() {
 
           {/* Browser Info */}
           <div>
-            <label htmlFor="browserInfo" className="block text-sm font-medium text-gray-700 mb-2">
-              Browser Information
-            </label>
+            <FormFieldTooltip
+              label="Browser Information"
+              tooltipContent={formFieldHelp.browserInfo.description}
+              htmlFor="browserInfo"
+              className="mb-2"
+            />
             <input
               type="text"
               id="browserInfo"
@@ -392,9 +428,12 @@ export default function Home() {
 
           {/* File Attachments */}
           <div>
-            <label htmlFor="attachments" className="block text-sm font-medium text-gray-700 mb-2">
-              Attachments
-            </label>
+            <FormFieldTooltip
+              label="Attachments"
+              tooltipContent={formFieldHelp.attachments.description}
+              htmlFor="attachments"
+              className="mb-2"
+            />
             <div className="mt-1">
               <input
                 type="file"
