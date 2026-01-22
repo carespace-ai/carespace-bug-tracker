@@ -54,6 +54,13 @@ export async function POST(request: NextRequest) {
 
   if (!rateLimitResult.allowed) {
     const resetDate = new Date(rateLimitResult.resetTime);
+    const retryAfterSeconds = Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000);
+
+    console.error(
+      `Rate limit violation: Request blocked from IP ${clientIP}. ` +
+      `Retry available in ${retryAfterSeconds} seconds at ${resetDate.toISOString()}.`
+    );
+
     return NextResponse.json(
       {
         error: 'Rate limit exceeded',

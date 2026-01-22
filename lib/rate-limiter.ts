@@ -92,6 +92,15 @@ export function getRateLimitResult(ipAddress: string): RateLimitResult {
     // Rate limit exceeded
     const oldestTimestamp = Math.min(...log.timestamps);
     const resetTime = oldestTimestamp + RATE_LIMIT_WINDOW_MS;
+    const resetDate = new Date(resetTime);
+    const secondsUntilReset = Math.ceil((resetTime - now) / 1000);
+
+    console.error(
+      `Rate limit exceeded for IP ${ipAddress}. ` +
+      `Current requests: ${requestCount}/${RATE_LIMIT_MAX_REQUESTS}. ` +
+      `Reset at ${resetDate.toISOString()} (in ${secondsUntilReset} seconds).`
+    );
+
     return {
       allowed: false,
       remaining: 0,
