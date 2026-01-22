@@ -1,10 +1,13 @@
 import axios from 'axios';
 import { EnhancedBugReport } from './types';
 import FormData from 'form-data';
+import { retryWithBackoff } from './retry-handler';
+import { executeWithCircuitBreaker } from './circuit-breaker';
 
 const CLICKUP_API_URL = 'https://api.clickup.com/api/v2';
 const apiKey = process.env.CLICKUP_API_KEY || '';
 const listId = process.env.CLICKUP_LIST_ID || '';
+const CIRCUIT_BREAKER_SERVICE_NAME = 'clickup';
 
 interface ClickUpTaskResponse {
   id: string;
@@ -13,7 +16,7 @@ interface ClickUpTaskResponse {
 
 export async function createClickUpTask(
   enhancedReport: EnhancedBugReport,
-  githubIssueUrl: string,
+  githubIssueUrl: string | undefined,
   files?: File[]
 ): Promise<string> {
   // Build attachments section if files are provided
@@ -21,11 +24,14 @@ export async function createClickUpTask(
     ? `\n### Attachments\n${files.map(f => `- ${f.name} (${(f.size / 1024).toFixed(2)} KB)`).join('\n')}\n`
     : '';
 
+  // Handle case where GitHub URL might be undefined
+  const githubSection = githubIssueUrl
+    ? `**GitHub Issue**: ${githubIssueUrl}\n\n`
+    : `**GitHub Issue**: Not created (GitHub service unavailable)\n\n`;
+
   const taskDescription = `## Bug Report from Customer
 
-**GitHub Issue**: ${githubIssueUrl}
-
-### Description
+${githubSection}### Description
 ${enhancedReport.enhancedDescription}
 
 ### Technical Context
@@ -43,21 +49,26 @@ ${enhancedReport.claudePrompt}
 \`\`\``;
 
   try {
-    const response = await axios.post<ClickUpTaskResponse>(
-      `${CLICKUP_API_URL}/list/${listId}/task`,
-      {
-        name: `[BUG] ${enhancedReport.title}`,
-        description: taskDescription,
-        priority: enhancedReport.priority,
-        tags: enhancedReport.suggestedLabels,
-        status: 'to do',
-      },
-      {
-        headers: {
-          Authorization: apiKey,
-          'Content-Type': 'application/json',
-        },
-      }
+    const response = await executeWithCircuitBreaker(
+      CIRCUIT_BREAKER_SERVICE_NAME,
+      () => retryWithBackoff(
+        () => axios.post<ClickUpTaskResponse>(
+          `${CLICKUP_API_URL}/list/${listId}/task`,
+          {
+            name: `[BUG] ${enhancedReport.title}`,
+            description: taskDescription,
+            priority: enhancedReport.priority,
+            tags: enhancedReport.suggestedLabels,
+            status: 'to do',
+          },
+          {
+            headers: {
+              Authorization: apiKey,
+              'Content-Type': 'application/json',
+            },
+          }
+        )
+      )
     );
 
     const taskId = response.data.id;
@@ -70,7 +81,9 @@ ${enhancedReport.claudePrompt}
 
     return taskUrl;
   } catch (error) {
-    console.error('Error creating ClickUp task:', error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to create ClickUp task: ${error.message}`);
+    }
     throw new Error('Failed to create ClickUp task');
   }
 }
@@ -103,20 +116,27 @@ export async function uploadFilesToClickUpTask(
         contentType: file.type,
       });
 
-      // Upload file to ClickUp task
-      await axios.post(
-        `${CLICKUP_API_URL}/task/${taskId}/attachment`,
-        formData,
-        {
-          headers: {
-            Authorization: apiKey,
-            ...formData.getHeaders(),
-          },
-        }
+      // Upload file to ClickUp task with retry and circuit breaker
+      await executeWithCircuitBreaker(
+        CIRCUIT_BREAKER_SERVICE_NAME,
+        () => retryWithBackoff(
+          () => axios.post(
+            `${CLICKUP_API_URL}/task/${taskId}/attachment`,
+            formData,
+            {
+              headers: {
+                Authorization: apiKey,
+                ...formData.getHeaders(),
+              },
+            }
+          )
+        )
       );
     }
   } catch (error) {
-    console.error('Error uploading files to ClickUp task:', error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to upload files to ClickUp task: ${error.message}`);
+    }
     throw new Error('Failed to upload files to ClickUp task');
   }
 }
@@ -126,18 +146,25 @@ export async function updateTaskStatus(
   status: string
 ): Promise<void> {
   try {
-    await axios.put(
-      `${CLICKUP_API_URL}/task/${taskId}`,
-      { status },
-      {
-        headers: {
-          Authorization: apiKey,
-          'Content-Type': 'application/json',
-        },
-      }
+    await executeWithCircuitBreaker(
+      CIRCUIT_BREAKER_SERVICE_NAME,
+      () => retryWithBackoff(
+        () => axios.put(
+          `${CLICKUP_API_URL}/task/${taskId}`,
+          { status },
+          {
+            headers: {
+              Authorization: apiKey,
+              'Content-Type': 'application/json',
+            },
+          }
+        )
+      )
     );
   } catch (error) {
-    console.error('Error updating ClickUp task status:', error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to update ClickUp task status: ${error.message}`);
+    }
     throw new Error('Failed to update ClickUp task status');
   }
 }

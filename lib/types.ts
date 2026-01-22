@@ -40,16 +40,26 @@ export interface ClickUpTask {
   tags: string[];
 }
 
-export interface SubmitBugResponse {
-  success: boolean;
-  message: string;
-  data?: {
-    githubIssue: string;
-    clickupTask: string;
-    enhancedReport: {
-      title: string;
-      priority: number;
-      labels: string[];
-    };
+export interface QueuedSubmission {
+  id: string;
+  bugReport: BugReport;
+  enhancedReport?: EnhancedBugReport;
+  status: 'pending' | 'retrying' | 'failed' | 'partial';
+  retryCount: number;
+  timestamp: number;
+  lastAttempt?: number;
+  errors: {
+    github?: string;
+    clickup?: string;
+    anthropic?: string;
+  };
+  successfulServices: {
+    github?: boolean;
+    clickup?: boolean;
+    anthropic?: boolean;
+  };
+  urls?: {
+    github?: string;
+    clickup?: string;
   };
 }

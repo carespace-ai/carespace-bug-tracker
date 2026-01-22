@@ -1,0 +1,93 @@
+{
+  "header": {
+    "title": "🐛 Carespace バグトラッカー",
+    "subtitle": "バグを報告すると自動的に処理されます"
+  },
+  "form": {
+    "title": {
+      "label": "バグタイトル *",
+      "placeholder": "バグの簡単な説明"
+    },
+    "description": {
+      "label": "説明 *",
+      "placeholder": "バグの詳細な説明"
+    },
+    "stepsToReproduce": {
+      "label": "再現手順",
+      "placeholder": "1. ～に移動する...\n2. ～をクリックする...\n3. エラーが表示される"
+    },
+    "expectedBehavior": {
+      "label": "期待される動作",
+      "placeholder": "どうなるべきですか？"
+    },
+    "actualBehavior": {
+      "label": "実際の動作",
+      "placeholder": "実際にはどうなりますか？"
+    },
+    "severity": {
+      "label": "重要度 *",
+      "options": {
+        "low": "低",
+        "medium": "中",
+        "high": "高",
+        "critical": "緊急"
+      }
+    },
+    "category": {
+      "label": "カテゴリー *",
+      "options": {
+        "ui": "UI",
+        "functionality": "機能",
+        "performance": "パフォーマンス",
+        "security": "セキュリティ",
+        "other": "その他"
+      }
+    },
+    "userEmail": {
+      "label": "メールアドレス",
+      "placeholder": "your@email.com"
+    },
+    "environment": {
+      "label": "環境",
+      "placeholder": "本番環境、ステージング環境など"
+    },
+    "browserInfo": {
+      "label": "ブラウザ情報",
+      "placeholder": "Chrome 120、Safari 17など"
+    },
+    "attachments": {
+      "label": "添付ファイル",
+      "help": "スクリーンショット、動画、ログファイルをアップロード（1ファイルあたり最大10MB、形式：JPG、PNG、GIF、WebP、MP4、MOV、TXT、LOG、PDF、JSON）"
+    },
+    "submit": {
+      "button": "バグレポートを送信",
+      "processing": "処理中..."
+    }
+  },
+  "messages": {
+    "success": "バグレポートが正常に送信されました！",
+    "error": {
+      "submit": "バグレポートの送信に失敗しました",
+      "network": "ネットワークエラー。もう一度お試しください。",
+      "fileTooLarge": "が大きすぎます（最大10MB）",
+      "unsupportedFileType": "はサポートされていないファイル形式です"
+    }
+  },
+  "results": {
+    "githubIssue": "GitHub Issue:",
+    "clickupTask": "ClickUp タスク:",
+    "priority": "優先度:",
+    "labels": "ラベル:",
+    "viewIssue": "Issue を表示",
+    "viewTask": "タスクを表示"
+  },
+  "footer": {
+    "text": "バグレポートは自動的に：",
+    "items": {
+      "enhanced": "✨ AI分析により強化",
+      "github": "📝 GitHubのissueとして作成",
+      "clickup": "📊 ClickUpに記録",
+      "claude": "🤖 Claude Codeプロンプトを準備"
+    }
+  }
+}

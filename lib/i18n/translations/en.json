@@ -1,0 +1,93 @@
+{
+  "header": {
+    "title": "🐛 Carespace Bug Tracker",
+    "subtitle": "Report bugs and we'll process them automatically"
+  },
+  "form": {
+    "title": {
+      "label": "Bug Title *",
+      "placeholder": "Brief description of the bug"
+    },
+    "description": {
+      "label": "Description *",
+      "placeholder": "Detailed description of the bug"
+    },
+    "stepsToReproduce": {
+      "label": "Steps to Reproduce",
+      "placeholder": "1. Go to...\n2. Click on...\n3. See error"
+    },
+    "expectedBehavior": {
+      "label": "Expected Behavior",
+      "placeholder": "What should happen?"
+    },
+    "actualBehavior": {
+      "label": "Actual Behavior",
+      "placeholder": "What actually happens?"
+    },
+    "severity": {
+      "label": "Severity *",
+      "options": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "critical": "Critical"
+      }
+    },
+    "category": {
+      "label": "Category *",
+      "options": {
+        "ui": "UI",
+        "functionality": "Functionality",
+        "performance": "Performance",
+        "security": "Security",
+        "other": "Other"
+      }
+    },
+    "userEmail": {
+      "label": "Your Email",
+      "placeholder": "your@email.com"
+    },
+    "environment": {
+      "label": "Environment",
+      "placeholder": "Production, Staging, etc."
+    },
+    "browserInfo": {
+      "label": "Browser Information",
+      "placeholder": "Chrome 120, Safari 17, etc."
+    },
+    "attachments": {
+      "label": "Attachments",
+      "help": "Upload screenshots, videos, or log files (max 10MB per file, formats: JPG, PNG, GIF, WebP, MP4, MOV, TXT, LOG, PDF, JSON)"
+    },
+    "submit": {
+      "button": "Submit Bug Report",
+      "processing": "Processing..."
+    }
+  },
+  "messages": {
+    "success": "Bug report submitted successfully!",
+    "error": {
+      "submit": "Failed to submit bug report",
+      "network": "Network error. Please try again.",
+      "fileTooLarge": "is too large (max 10MB)",
+      "unsupportedFileType": "has unsupported file type"
+    }
+  },
+  "results": {
+    "githubIssue": "GitHub Issue:",
+    "clickupTask": "ClickUp Task:",
+    "priority": "Priority:",
+    "labels": "Labels:",
+    "viewIssue": "View Issue",
+    "viewTask": "View Task"
+  },
+  "footer": {
+    "text": "Your bug report will be automatically:",
+    "items": {
+      "enhanced": "✨ Enhanced with AI analysis",
+      "github": "📝 Created as a GitHub issue",
+      "clickup": "📊 Logged in ClickUp",
+      "claude": "🤖 Prepared with Claude Code prompts"
+    }
+  }
+}

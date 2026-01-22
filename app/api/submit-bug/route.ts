@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { enhanceBugReport } from '@/lib/llm-service';
-import { createGitHubIssue, uploadFilesToGitHub } from '@/lib/github-service';
+import { createGitHubIssue } from '@/lib/github-service';
 import { createClickUpTask } from '@/lib/clickup-service';
-import { BugReport } from '@/lib/types';
-import { getRateLimitResult, RATE_LIMIT_MAX_REQUESTS } from '@/lib/rate-limiter';
+import { BugReport, EnhancedBugReport } from '@/lib/types';
+import { getRateLimitResult } from '@/lib/rate-limiter';
+import { addToQueue } from '@/lib/submission-queue';
 
 const bugReportSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -24,7 +25,7 @@ const bugReportSchema = z.object({
  */
 function getRateLimitHeaders(rateLimitResult: { remaining: number; resetTime: number }) {
   return {
-    'X-RateLimit-Limit': RATE_LIMIT_MAX_REQUESTS.toString(),
+    'X-RateLimit-Limit': '5',
     'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
     'X-RateLimit-Reset': rateLimitResult.resetTime.toString()
   };
@@ -54,13 +55,6 @@ export async function POST(request: NextRequest) {
 
   if (!rateLimitResult.allowed) {
     const resetDate = new Date(rateLimitResult.resetTime);
-    const retryAfterSeconds = Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000);
-
-    console.error(
-      `Rate limit violation: Request blocked from IP ${clientIP}. ` +
-      `Retry available in ${retryAfterSeconds} seconds at ${resetDate.toISOString()}.`
-    );
-
     return NextResponse.json(
       {
         error: 'Rate limit exceeded',
@@ -79,81 +73,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Parse FormData instead of JSON
-    const formData = await request.formData();
-
-    // Extract form fields from FormData
-    const body = {
-      title: formData.get('title') as string,
-      description: formData.get('description') as string,
-      stepsToReproduce: formData.get('stepsToReproduce') as string | undefined,
-      expectedBehavior: formData.get('expectedBehavior') as string | undefined,
-      actualBehavior: formData.get('actualBehavior') as string | undefined,
-      severity: formData.get('severity') as string,
-      category: formData.get('category') as string,
-      userEmail: formData.get('userEmail') as string | undefined,
-      environment: formData.get('environment') as string | undefined,
-      browserInfo: formData.get('browserInfo') as string | undefined,
-    };
-
-    // Extract file attachments
-    const attachments = formData.getAll('attachments') as File[];
-
-    // Validate file attachments
-    const maxFileCount = 5;
-    const maxFileSize = 10 * 1024 * 1024; // 10MB
-    const allowedTypes = [
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-      'video/mp4',
-      'video/quicktime',
-      'text/plain',        // For .txt and .log files
-      'application/pdf',   // For PDF documents
-      'application/json',  // For JSON log files
-    ];
-
-    // Check file count
-    if (attachments.length > maxFileCount) {
-      return NextResponse.json(
-        {
-          error: 'Too many files',
-          message: `Maximum ${maxFileCount} files allowed. You uploaded ${attachments.length} files.`
-        },
-        {
-          status: 400,
-          headers: getRateLimitHeaders(rateLimitResult)
-        }
-      );
-    }
-
-    // Validate each file
-    const fileErrors: string[] = [];
-    for (const file of attachments) {
-      // Check file size
-      if (file.size > maxFileSize) {
-        fileErrors.push(`${file.name} is too large (max 10MB)`);
-      }
-
-      // Check file type
-      if (!allowedTypes.includes(file.type)) {
-        fileErrors.push(`${file.name} has unsupported file type (${file.type})`);
-      }
-    }
-
-    if (fileErrors.length > 0) {
-      return NextResponse.json(
-        {
-          error: 'Invalid file attachments',
-          message: fileErrors.join(', ')
-        },
-        {
-          status: 400,
-          headers: getRateLimitHeaders(rateLimitResult)
-        }
-      );
-    }
+    const body = await request.json();
 
     // Validate input
     const validationResult = bugReportSchema.safeParse(body);
@@ -169,25 +89,118 @@ export async function POST(request: NextRequest) {
 
     const bugReport: BugReport = validationResult.data;
 
-    // Step 1: Enhance bug report with LLM
-    console.log('Enhancing bug report with LLM...');
-    const enhancedReport = await enhanceBugReport(bugReport);
+    // Track results for each service
+    let enhancedReport: EnhancedBugReport | undefined;
+    let githubIssueUrl: string | undefined;
+    let clickupTaskUrl: string | undefined;
 
-    // Step 2: Upload file attachments to GitHub (if any)
-    if (attachments.length > 0) {
-      console.log(`Uploading ${attachments.length} file(s) to GitHub...`);
-      const uploadedAttachments = await uploadFilesToGitHub(attachments);
-      enhancedReport.attachments = uploadedAttachments;
+    const errors: { github?: string; clickup?: string; anthropic?: string } = {};
+    const successfulServices: { github?: boolean; clickup?: boolean; anthropic?: boolean } = {};
+
+    // Step 1: Enhance bug report with LLM (graceful degradation - failure doesn't block)
+    try {
+      enhancedReport = await enhanceBugReport(bugReport);
+      successfulServices.anthropic = true;
+    } catch (error) {
+      errors.anthropic = error instanceof Error ? error.message : 'Unknown error';
+      // Use original bug report if enhancement fails
+      enhancedReport = {
+        ...bugReport,
+        enhancedDescription: bugReport.description,
+        suggestedLabels: [bugReport.category, bugReport.severity],
+        technicalContext: '',
+        claudePrompt: '',
+        priority: bugReport.severity === 'critical' ? 1 : bugReport.severity === 'high' ? 2 : 3,
+      };
     }
 
-    // Step 3: Create GitHub issue
-    console.log('Creating GitHub issue...');
-    const githubIssueUrl = await createGitHubIssue(enhancedReport);
+    // Step 2: Create GitHub issue
+    try {
+      githubIssueUrl = await createGitHubIssue(enhancedReport);
+      successfulServices.github = true;
+    } catch (error) {
+      errors.github = error instanceof Error ? error.message : 'Unknown error';
+    }
 
-    // Step 4: Create ClickUp task
-    console.log('Creating ClickUp task...');
-    const clickupTaskUrl = await createClickUpTask(enhancedReport, githubIssueUrl);
+    // Step 3: Create ClickUp task
+    try {
+      clickupTaskUrl = await createClickUpTask(enhancedReport, githubIssueUrl);
+      successfulServices.clickup = true;
+    } catch (error) {
+      errors.clickup = error instanceof Error ? error.message : 'Unknown error';
+    }
 
+    // Determine overall success status
+    const hasAnySuccess = Object.values(successfulServices).some(Boolean);
+    const hasAnyFailure = Object.keys(errors).length > 0;
+
+    // If there are failures, add to queue for retry
+    let queueId: string | undefined;
+    if (hasAnyFailure) {
+      try {
+        queueId = addToQueue(
+          bugReport,
+          enhancedReport,
+          errors,
+          successfulServices,
+          {
+            github: githubIssueUrl,
+            clickup: clickupTaskUrl
+          }
+        );
+      } catch (queueError) {
+        // Queue is full or error adding to queue - log but don't fail the request
+      }
+    }
+
+    // Build response based on results
+    if (!hasAnySuccess) {
+      // Complete failure - all services failed
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Bug report submission failed',
+          errors,
+          queuedForRetry: queueId ? true : false,
+          queueId
+        },
+        {
+          status: 500,
+          headers: getRateLimitHeaders(rateLimitResult)
+        }
+      );
+    }
+
+    if (hasAnyFailure) {
+      // Partial success - some services succeeded, some failed
+      return NextResponse.json(
+        {
+          success: true,
+          partial: true,
+          message: 'Bug report partially submitted',
+          data: {
+            githubIssue: githubIssueUrl,
+            clickupTask: clickupTaskUrl,
+            enhancedReport: enhancedReport ? {
+              title: enhancedReport.title,
+              priority: enhancedReport.priority,
+              labels: enhancedReport.suggestedLabels,
+            } : undefined,
+          },
+          githubStatus: successfulServices.github ? 'success' : 'failed',
+          clickupStatus: successfulServices.clickup ? 'success' : 'failed',
+          errors,
+          queuedForRetry: queueId ? true : false,
+          queueId
+        },
+        {
+          status: 207, // Multi-Status
+          headers: getRateLimitHeaders(rateLimitResult)
+        }
+      );
+    }
+
+    // Complete success - all services succeeded
     return NextResponse.json(
       {
         success: true,
@@ -201,13 +214,15 @@ export async function POST(request: NextRequest) {
             labels: enhancedReport.suggestedLabels,
           },
         },
+        githubStatus: 'success',
+        clickupStatus: 'success',
       },
       {
         headers: getRateLimitHeaders(rateLimitResult)
       }
     );
   } catch (error) {
-    console.error('Error processing bug report:', error);
+    // Unexpected error (e.g., JSON parsing, validation)
     return NextResponse.json(
       {
         error: 'Failed to process bug report',

@@ -1,0 +1,93 @@
+{
+  "header": {
+    "title": "🐛 Rastreador de Errores Carespace",
+    "subtitle": "Reporta errores y los procesaremos automáticamente"
+  },
+  "form": {
+    "title": {
+      "label": "Título del Error *",
+      "placeholder": "Descripción breve del error"
+    },
+    "description": {
+      "label": "Descripción *",
+      "placeholder": "Descripción detallada del error"
+    },
+    "stepsToReproduce": {
+      "label": "Pasos para Reproducir",
+      "placeholder": "1. Ir a...\n2. Hacer clic en...\n3. Ver error"
+    },
+    "expectedBehavior": {
+      "label": "Comportamiento Esperado",
+      "placeholder": "¿Qué debería suceder?"
+    },
+    "actualBehavior": {
+      "label": "Comportamiento Actual",
+      "placeholder": "¿Qué sucede realmente?"
+    },
+    "severity": {
+      "label": "Severidad *",
+      "options": {
+        "low": "Baja",
+        "medium": "Media",
+        "high": "Alta",
+        "critical": "Crítica"
+      }
+    },
+    "category": {
+      "label": "Categoría *",
+      "options": {
+        "ui": "Interfaz de Usuario",
+        "functionality": "Funcionalidad",
+        "performance": "Rendimiento",
+        "security": "Seguridad",
+        "other": "Otro"
+      }
+    },
+    "userEmail": {
+      "label": "Tu Correo Electrónico",
+      "placeholder": "tu@correo.com"
+    },
+    "environment": {
+      "label": "Entorno",
+      "placeholder": "Producción, Pruebas, etc."
+    },
+    "browserInfo": {
+      "label": "Información del Navegador",
+      "placeholder": "Chrome 120, Safari 17, etc."
+    },
+    "attachments": {
+      "label": "Archivos Adjuntos",
+      "help": "Sube capturas de pantalla, videos o archivos de registro (máx 10MB por archivo, formatos: JPG, PNG, GIF, WebP, MP4, MOV, TXT, LOG, PDF, JSON)"
+    },
+    "submit": {
+      "button": "Enviar Reporte de Error",
+      "processing": "Procesando..."
+    }
+  },
+  "messages": {
+    "success": "¡Reporte de error enviado exitosamente!",
+    "error": {
+      "submit": "Error al enviar el reporte de error",
+      "network": "Error de red. Por favor, inténtalo de nuevo.",
+      "fileTooLarge": "es demasiado grande (máx 10MB)",
+      "unsupportedFileType": "tiene un tipo de archivo no compatible"
+    }
+  },
+  "results": {
+    "githubIssue": "Issue de GitHub:",
+    "clickupTask": "Tarea de ClickUp:",
+    "priority": "Prioridad:",
+    "labels": "Etiquetas:",
+    "viewIssue": "Ver Issue",
+    "viewTask": "Ver Tarea"
+  },
+  "footer": {
+    "text": "Tu reporte de error será automáticamente:",
+    "items": {
+      "enhanced": "✨ Mejorado con análisis de IA",
+      "github": "📝 Creado como un issue de GitHub",
+      "clickup": "📊 Registrado en ClickUp",
+      "claude": "🤖 Preparado con prompts de Claude Code"
+    }
+  }
+}

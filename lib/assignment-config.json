@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Configuration for automatic bug assignment based on category. Maps bug categories to GitHub usernames and ClickUp user IDs.",
+  "version": "1.0.0",
+  "lastUpdated": "2026-01-22",
+  "settings": {
+    "enableAiFallback": true,
+    "requireManualApproval": false,
+    "defaultAssigneeIfNoMatch": null
+  },
+  "categoryMappings": {
+    "ui": {
+      "description": "User interface bugs, visual issues, styling problems",
+      "githubAssignees": [
+        "frontend-dev"
+      ],
+      "clickupAssignees": [
+        "12345678"
+      ],
+      "enabled": true
+    },
+    "functionality": {
+      "description": "Functional bugs, business logic issues, API problems",
+      "githubAssignees": [
+        "backend-dev"
+      ],
+      "clickupAssignees": [
+        "23456789"
+      ],
+      "enabled": true
+    },
+    "performance": {
+      "description": "Performance issues, slow load times, optimization needs",
+      "githubAssignees": [
+        "performance-engineer"
+      ],
+      "clickupAssignees": [
+        "34567890"
+      ],
+      "enabled": true
+    },
+    "security": {
+      "description": "Security vulnerabilities, authentication issues, data privacy concerns",
+      "githubAssignees": [
+        "security-team"
+      ],
+      "clickupAssignees": [
+        "45678901"
+      ],
+      "enabled": true
+    },
+    "other": {
+      "description": "Uncategorized or miscellaneous bugs",
+      "githubAssignees": [],
+      "clickupAssignees": [],
+      "enabled": false
+    }
+  },
+  "teams": {
+    "frontend": {
+      "githubUsers": [
+        "frontend-dev"
+      ],
+      "clickupUsers": [
+        "12345678"
+      ]
+    },
+    "backend": {
+      "githubUsers": [
+        "backend-dev"
+      ],
+      "clickupUsers": [
+        "23456789"
+      ]
+    },
+    "infrastructure": {
+      "githubUsers": [
+        "performance-engineer"
+      ],
+      "clickupUsers": [
+        "34567890"
+      ]
+    },
+    "security": {
+      "githubUsers": [
+        "security-team"
+      ],
+      "clickupUsers": [
+        "45678901"
+      ]
+    }
+  },
+  "aiSuggestionPrompt": {
+    "enabled": true,
+    "prompt": "Based on the bug description and technical context, suggest which team or individual would be best suited to handle this issue. Consider the technical domain, affected components, and required expertise."
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "header": {
+    "title": "🐛 Suivi des Bugs Carespace",
+    "subtitle": "Signalez des bugs et nous les traiterons automatiquement"
+  },
+  "form": {
+    "title": {
+      "label": "Titre du Bug *",
+      "placeholder": "Brève description du bug"
+    },
+    "description": {
+      "label": "Description *",
+      "placeholder": "Description détaillée du bug"
+    },
+    "stepsToReproduce": {
+      "label": "Étapes pour Reproduire",
+      "placeholder": "1. Aller à...\n2. Cliquer sur...\n3. Voir l'erreur"
+    },
+    "expectedBehavior": {
+      "label": "Comportement Attendu",
+      "placeholder": "Que devrait-il se passer ?"
+    },
+    "actualBehavior": {
+      "label": "Comportement Réel",
+      "placeholder": "Que se passe-t-il réellement ?"
+    },
+    "severity": {
+      "label": "Gravité *",
+      "options": {
+        "low": "Faible",
+        "medium": "Moyenne",
+        "high": "Élevée",
+        "critical": "Critique"
+      }
+    },
+    "category": {
+      "label": "Catégorie *",
+      "options": {
+        "ui": "Interface",
+        "functionality": "Fonctionnalité",
+        "performance": "Performance",
+        "security": "Sécurité",
+        "other": "Autre"
+      }
+    },
+    "userEmail": {
+      "label": "Votre Email",
+      "placeholder": "votre@email.com"
+    },
+    "environment": {
+      "label": "Environnement",
+      "placeholder": "Production, Préproduction, etc."
+    },
+    "browserInfo": {
+      "label": "Informations du Navigateur",
+      "placeholder": "Chrome 120, Safari 17, etc."
+    },
+    "attachments": {
+      "label": "Pièces Jointes",
+      "help": "Téléchargez des captures d'écran, vidéos ou fichiers journaux (max 10 Mo par fichier, formats : JPG, PNG, GIF, WebP, MP4, MOV, TXT, LOG, PDF, JSON)"
+    },
+    "submit": {
+      "button": "Soumettre le Rapport de Bug",
+      "processing": "Traitement en cours..."
+    }
+  },
+  "messages": {
+    "success": "Rapport de bug soumis avec succès !",
+    "error": {
+      "submit": "Échec de la soumission du rapport de bug",
+      "network": "Erreur réseau. Veuillez réessayer.",
+      "fileTooLarge": "est trop volumineux (max 10 Mo)",
+      "unsupportedFileType": "a un type de fichier non pris en charge"
+    }
+  },
+  "results": {
+    "githubIssue": "Ticket GitHub :",
+    "clickupTask": "Tâche ClickUp :",
+    "priority": "Priorité :",
+    "labels": "Étiquettes :",
+    "viewIssue": "Voir le Ticket",
+    "viewTask": "Voir la Tâche"
+  },
+  "footer": {
+    "text": "Votre rapport de bug sera automatiquement :",
+    "items": {
+      "enhanced": "✨ Enrichi avec une analyse IA",
+      "github": "📝 Créé comme un ticket GitHub",
+      "clickup": "📊 Enregistré dans ClickUp",
+      "claude": "🤖 Préparé avec des invites Claude Code"
+    }
+  }
+}

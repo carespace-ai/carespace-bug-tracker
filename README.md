@@ -13,6 +13,12 @@ An automated bug tracking system that collects customer bug reports, enhances th
   - Automatic priority scoring
 - **🔗 GitHub Integration** - Automatically creates well-formatted GitHub issues
 - **📊 ClickUp Integration** - Logs tasks in ClickUp for project management
+- **🔄 Two-Way Sync** - Bidirectional synchronization between GitHub and ClickUp:
+  - Status changes sync automatically (open/closed ↔ to do/complete)
+  - Comments sync in both directions
+  - Labels/tags sync bidirectionally
+  - Conflict resolution with timestamp-based logic
+  - Sub-1-minute sync latency
 - **🛡️ Rate Limiting Protection** - Built-in protection against spam and abuse (5 requests per 15 min per IP)
 - **⚡ Serverless Architecture** - Built with Next.js, ready for Vercel deployment
 
@@ -24,7 +30,8 @@ An automated bug tracking system that collects customer bug reports, enhances th
 2. **AI Enhancement** → Claude analyzes and enriches the report
 3. **GitHub Issue** → Automatically created with enhanced details
 4. **ClickUp Task** → Logged for project tracking
-5. **Developer Action** → Uses provided Claude Code prompt to fix
+5. **Two-Way Sync** → Changes in GitHub or ClickUp automatically sync
+6. **Developer Action** → Uses provided Claude Code prompt to fix
 
 ### Tech Stack
 
@@ -88,6 +95,22 @@ An automated bug tracking system that collects customer bug reports, enhances th
 4. Create a new key
 5. Copy to `ANTHROPIC_API_KEY` in `.env.local`
 
+#### Webhook Secrets (Required for Two-Way Sync)
+
+For two-way synchronization between GitHub and ClickUp, you need to configure webhook secrets:
+
+```bash
+# Generate secure random secrets
+openssl rand -hex 32  # Use for GITHUB_WEBHOOK_SECRET
+openssl rand -hex 32  # Use for CLICKUP_WEBHOOK_SECRET
+```
+
+Add these to `.env.local`:
+- `GITHUB_WEBHOOK_SECRET` - Secret for verifying GitHub webhook requests
+- `CLICKUP_WEBHOOK_SECRET` - Secret for verifying ClickUp webhook requests
+
+**📖 See [WEBHOOK_SETUP.md](./WEBHOOK_SETUP.md) for complete webhook configuration instructions.**
+
 ### Running Locally
 
 ```bash
@@ -123,6 +146,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
    vercel env add CLICKUP_API_KEY
    vercel env add CLICKUP_LIST_ID
    vercel env add ANTHROPIC_API_KEY
+   vercel env add GITHUB_WEBHOOK_SECRET
+   vercel env add CLICKUP_WEBHOOK_SECRET
    ```
 
 ### Option 2: Vercel Dashboard
@@ -131,8 +156,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 2. Go to [Vercel Dashboard](https://vercel.com/dashboard)
 3. Click "Add New" → "Project"
 4. Import your GitHub repository
-5. Add environment variables in the project settings
+5. Add environment variables in the project settings (including webhook secrets)
 6. Deploy!
+7. Configure webhooks (see [WEBHOOK_SETUP.md](./WEBHOOK_SETUP.md))
 
 ## 📖 Usage
 
@@ -162,6 +188,14 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 3. **Track in ClickUp**: All activities are logged in ClickUp for project management
 
+4. **Two-Way Sync**: Changes sync automatically between GitHub and ClickUp:
+   - Close issues in GitHub → Task completes in ClickUp
+   - Update task status in ClickUp → Issue updates in GitHub
+   - Add comments in either platform → Comments appear in both
+   - Add labels/tags → Sync across both platforms
+
+See [WEBHOOK_SETUP.md](./WEBHOOK_SETUP.md) for webhook configuration.
+
 ## 🔧 Customization
 
 ### Modify GitHub Issue Template
@@ -186,8 +220,13 @@ Edit `app/page.tsx` - uses Tailwind CSS classes
 bug-tracker/
 ├── app/
 │   ├── api/
-│   │   └── submit-bug/
-│   │       └── route.ts          # API endpoint for bug submission
+│   │   ├── submit-bug/
+│   │   │   └── route.ts          # API endpoint for bug submission
+│   │   └── webhooks/
+│   │       ├── github/
+│   │       │   └── route.ts      # GitHub webhook endpoint
+│   │       └── clickup/
+│   │           └── route.ts      # ClickUp webhook endpoint
 │   ├── page.tsx                  # Main bug submission form
 │   ├── layout.tsx                # App layout
 │   └── globals.css               # Global styles
@@ -196,10 +235,19 @@ bug-tracker/
 │   ├── rate-limiter.ts           # Rate limiting utility (sliding window)
 │   ├── llm-service.ts            # AI enhancement logic
 │   ├── github-service.ts         # GitHub API integration
-│   └── clickup-service.ts        # ClickUp API integration
+│   ├── clickup-service.ts        # ClickUp API integration
+│   ├── sync-storage.ts           # Sync mapping storage
+│   ├── sync-service.ts           # Bidirectional sync logic
+│   └── webhook-validator.ts      # Webhook signature verification
+├── scripts/
+│   ├── e2e-test-github-to-clickup.ts   # GitHub → ClickUp testing
+│   ├── e2e-test-clickup-to-github.ts   # ClickUp → GitHub testing
+│   ├── e2e-test-label-sync.ts          # Label/tag sync testing
+│   └── verify-sync-mapping.ts          # Mapping verification utility
 ├── .env.local                    # Environment variables (not in git)
-├── .env.example                  # Example environment variables
-└── README.md                     # This file
+├── README.md                     # This file
+├── WEBHOOK_SETUP.md              # Webhook configuration guide
+└── E2E_TESTING.md                # End-to-end testing guide
 ```
 
 ## 🔒 Security & Rate Limiting
@@ -322,6 +370,8 @@ To migrate from in-memory to Redis:
 
 ## 📝 Future Enhancements
 
+- [x] ~~Webhook support for real-time updates~~ ✅ Implemented
+- [x] ~~Two-way sync between GitHub and ClickUp~~ ✅ Implemented
 - [ ] Add authentication for bug submission
 - [ ] Email notifications to reporters
 - [ ] Attachment support (screenshots, logs)
@@ -329,7 +379,7 @@ To migrate from in-memory to Redis:
 - [ ] Analytics dashboard
 - [ ] Duplicate bug detection
 - [ ] Auto-assignment based on category
-- [ ] Webhook support for real-time updates
+- [ ] Migrate sync storage to Redis/Vercel KV for production
 
 ## 📄 License
 

@@ -5,6 +5,12 @@ const config = {
   roots: ['<rootDir>'],
   testMatch: ['**/*.test.ts'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+
+  // Add ES module handling for @octokit
+  transformIgnorePatterns: [
+    'node_modules/(?!(@octokit)/)',
+  ],
+
   collectCoverageFrom: [
     'lib/**/*.ts',
     '!lib/**/*.test.ts',

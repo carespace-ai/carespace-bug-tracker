@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { BugReport, EnhancedBugReport } from './types';
+import { sanitizeBugReportForPrompt } from './prompt-sanitizer';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
@@ -8,14 +9,8 @@ const anthropic = new Anthropic({
 });
 
 export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBugReport> {
-  // Format attachments section for the prompt
-  let attachmentsInfo = '';
-  if (bugReport.attachments && bugReport.attachments.length > 0) {
-    attachmentsInfo = '\nAttachments:\n' +
-      bugReport.attachments
-        .map(att => `- ${att.name} (${att.type}, ${(att.size / 1024).toFixed(2)} KB)`)
-        .join('\n');
-  }
+  // Sanitize input to prevent prompt injection attacks
+  const sanitized = sanitizeBugReportForPrompt(bugReport);
 
   const prompt = `You are a technical bug report analyzer. Enhance the following bug report with:
 1. A clear, detailed technical description
@@ -24,19 +19,16 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
 4. A specific prompt for Claude Code to fix this issue
 5. Priority score (1-5, where 5 is critical)
 
-${bugReport.attachments && bugReport.attachments.length > 0
-  ? 'IMPORTANT: This bug report includes attachments. Your enhanced description should reference these attachments appropriately (e.g., "See attached screenshot for visual details" or "Refer to attached log file for error stack trace").\n'
-  : ''}
 Bug Report:
-Title: ${bugReport.title}
-Description: ${bugReport.description}
-Steps to Reproduce: ${bugReport.stepsToReproduce || 'Not provided'}
-Expected Behavior: ${bugReport.expectedBehavior || 'Not provided'}
-Actual Behavior: ${bugReport.actualBehavior || 'Not provided'}
-Severity: ${bugReport.severity}
-Category: ${bugReport.category}
-Environment: ${bugReport.environment || 'Not provided'}
-Browser: ${bugReport.browserInfo || 'Not provided'}${attachmentsInfo}
+Title: ${sanitized.title}
+Description: ${sanitized.description}
+Steps to Reproduce: ${sanitized.stepsToReproduce || 'Not provided'}
+Expected Behavior: ${sanitized.expectedBehavior || 'Not provided'}
+Actual Behavior: ${sanitized.actualBehavior || 'Not provided'}
+Severity: ${sanitized.severity}
+Category: ${sanitized.category}
+Environment: ${sanitized.environment || 'Not provided'}
+Browser: ${sanitized.browserInfo || 'Not provided'}
 
 Respond in JSON format:
 {
@@ -87,9 +79,9 @@ Respond in JSON format:
     );
 
     if (isTimeout) {
-      console.error('Request timeout while enhancing bug report. The AI service took too long to respond. Falling back to basic enhancement.');
+      // Request timeout - falling back to basic enhancement
     } else {
-      console.error('Error enhancing bug report:', error);
+      // Error enhancing bug report - falling back to basic enhancement
     }
 
     // Fallback to basic enhancement

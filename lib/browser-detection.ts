@@ -53,3 +53,38 @@ export function detectBrowserInfo(): string {
   // Format the output
   return `${browserName}${browserVersion ? ' ' + browserVersion : ''} on ${os}`;
 }
+
+export function detectLanguage(): string {
+  if (typeof window === 'undefined') {
+    return 'en';
+  }
+
+  // Get browser language preference
+  const browserLang = navigator.language || (navigator.languages && navigator.languages[0]) || 'en';
+
+  // Extract the language code (e.g., 'en-US' -> 'en')
+  return browserLang.split('-')[0];
+}
+
+export function getLanguage(): string {
+  if (typeof window === 'undefined') {
+    return 'en';
+  }
+
+  // Check localStorage first
+  const storedLang = localStorage.getItem('language');
+  if (storedLang) {
+    return storedLang;
+  }
+
+  // Fall back to browser detection
+  return detectLanguage();
+}
+
+export function setLanguage(language: string): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.setItem('language', language);
+}
