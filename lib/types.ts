@@ -53,3 +53,68 @@ export interface SubmitBugResponse {
     };
   };
 }
+
+// AI Enhancement Settings Types
+export type ClaudePromptStyle = 'technical' | 'verbose' | 'concise' | 'beginner-friendly';
+
+export interface PromptTemplate {
+  name: string;
+  template: string;
+  variables: string[];
+  description?: string;
+}
+
+export interface LabelTaxonomy {
+  labels: string[];
+  autoSuggestionRules: {
+    keywords: string[];
+    suggestedLabel: string;
+  }[];
+}
+
+export interface PriorityWeights {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
+export interface AIEnhancementSettings {
+  promptTemplate: PromptTemplate;
+  labelTaxonomy: LabelTaxonomy;
+  priorityWeights: PriorityWeights;
+  claudePromptStyle: ClaudePromptStyle;
+}
+
+// Sync Storage Types
+export interface SyncMapping {
+  githubIssueId: string;
+  clickupTaskId: string;
+  lastSyncedAt: number;
+  syncDirection: 'github_to_clickup' | 'clickup_to_github' | 'bidirectional';
+}
+
+// Submission Queue Types
+export interface QueuedSubmission {
+  id: string;
+  bugReport: BugReport;
+  enhancedReport?: EnhancedBugReport;
+  status: 'pending' | 'retrying' | 'failed' | 'partial';
+  retryCount: number;
+  timestamp: number;
+  lastAttempt?: number;
+  errors: {
+    github?: string;
+    clickup?: string;
+    anthropic?: string;
+  };
+  successfulServices: {
+    github?: boolean;
+    clickup?: boolean;
+    anthropic?: boolean;
+  };
+  urls?: {
+    github?: string;
+    clickup?: string;
+  };
+}

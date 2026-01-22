@@ -55,7 +55,7 @@ function loadConfig(): AssignmentConfig {
   try {
     const configPath = join(process.cwd(), 'lib', 'assignment-config.json');
     const configData = readFileSync(configPath, 'utf-8');
-    cachedConfig = JSON.parse(configData);
+    cachedConfig = JSON.parse(configData) as AssignmentConfig;
     return cachedConfig;
   } catch (error) {
     console.error('Error loading assignment config:', error);
