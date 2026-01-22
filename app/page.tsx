@@ -23,11 +23,34 @@ export default function Home() {
     message: string;
     data?: any;
   } | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setSubmitResult(null);
+
+    // Validate required fields
+    const newErrors: Record<string, string> = {};
+    if (!formData.title?.trim()) {
+      newErrors.title = 'Bug title is required';
+    }
+    if (!formData.description?.trim()) {
+      newErrors.description = 'Description is required';
+    }
+    if (!formData.severity) {
+      newErrors.severity = 'Severity is required';
+    }
+    if (!formData.category) {
+      newErrors.category = 'Category is required';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
+    setIsSubmitting(true);
 
     try {
       const response = await fetch('/api/submit-bug', {
@@ -76,10 +99,18 @@ export default function Home() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
+    // Clear error for this field when user starts typing
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: '',
+      });
+    }
   };
 
   return (
@@ -152,7 +183,8 @@ export default function Home() {
               name="title"
               required
               aria-required="true"
-              aria-describedby="title-description"
+              aria-describedby={errors.title ? "title-description title-error" : "title-description"}
+              aria-invalid={errors.title ? "true" : "false"}
               value={formData.title}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -161,6 +193,11 @@ export default function Home() {
             <p id="title-description" className="sr-only">
               Provide a brief, clear title that summarizes the bug
             </p>
+            {errors.title && (
+              <p id="title-error" className="mt-1 text-sm text-red-600" role="alert">
+                {errors.title}
+              </p>
+            )}
           </div>
 
           {/* Description */}
@@ -173,7 +210,8 @@ export default function Home() {
               name="description"
               required
               aria-required="true"
-              aria-describedby="description-description"
+              aria-describedby={errors.description ? "description-description description-error" : "description-description"}
+              aria-invalid={errors.description ? "true" : "false"}
               value={formData.description}
               onChange={handleChange}
               rows={4}
@@ -183,6 +221,11 @@ export default function Home() {
             <p id="description-description" className="sr-only">
               Provide a detailed description of the bug, including what went wrong
             </p>
+            {errors.description && (
+              <p id="description-error" className="mt-1 text-sm text-red-600" role="alert">
+                {errors.description}
+              </p>
+            )}
           </div>
 
           {/* Steps to Reproduce */}
@@ -256,7 +299,8 @@ export default function Home() {
                 name="severity"
                 required
                 aria-required="true"
-                aria-describedby="severity-description"
+                aria-describedby={errors.severity ? "severity-description severity-error" : "severity-description"}
+                aria-invalid={errors.severity ? "true" : "false"}
                 value={formData.severity}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -269,6 +313,11 @@ export default function Home() {
               <p id="severity-description" className="sr-only">
                 Select the severity level of this bug
               </p>
+              {errors.severity && (
+                <p id="severity-error" className="mt-1 text-sm text-red-600" role="alert">
+                  {errors.severity}
+                </p>
+              )}
             </div>
             <div>
               <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
@@ -279,7 +328,8 @@ export default function Home() {
                 name="category"
                 required
                 aria-required="true"
-                aria-describedby="category-description"
+                aria-describedby={errors.category ? "category-description category-error" : "category-description"}
+                aria-invalid={errors.category ? "true" : "false"}
                 value={formData.category}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -293,6 +343,11 @@ export default function Home() {
               <p id="category-description" className="sr-only">
                 Select the category that best describes this bug
               </p>
+              {errors.category && (
+                <p id="category-error" className="mt-1 text-sm text-red-600" role="alert">
+                  {errors.category}
+                </p>
+              )}
             </div>
           </div>
 
