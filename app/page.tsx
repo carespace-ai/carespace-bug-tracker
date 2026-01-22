@@ -37,6 +37,15 @@ export default function Home() {
     }
   }, []);
 
+  // Save draft to localStorage on every formData change
+  useEffect(() => {
+    try {
+      localStorage.setItem('bugReportDraft', JSON.stringify(formData));
+    } catch (error) {
+      // Silently fail if localStorage is not available
+    }
+  }, [formData]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
