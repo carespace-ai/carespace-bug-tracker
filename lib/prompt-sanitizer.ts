@@ -139,5 +139,9 @@ export function containsInjectionAttempt(value: string): boolean {
     return false;
   }
 
-  return INJECTION_PATTERNS.some(pattern => pattern.test(value));
+  return INJECTION_PATTERNS.some(pattern => {
+    // Reset lastIndex to avoid stateful regex issues with global flag
+    pattern.lastIndex = 0;
+    return pattern.test(value);
+  });
 }
