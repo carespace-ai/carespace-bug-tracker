@@ -92,6 +92,62 @@ export async function POST(request: NextRequest) {
     // Extract file attachments
     const attachments = formData.getAll('attachments') as File[];
 
+    // Validate file attachments
+    const maxFileCount = 5;
+    const maxFileSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'video/mp4',
+      'video/quicktime',
+      'text/plain',        // For .txt and .log files
+      'application/pdf',   // For PDF documents
+      'application/json',  // For JSON log files
+    ];
+
+    // Check file count
+    if (attachments.length > maxFileCount) {
+      return NextResponse.json(
+        {
+          error: 'Too many files',
+          message: `Maximum ${maxFileCount} files allowed. You uploaded ${attachments.length} files.`
+        },
+        {
+          status: 400,
+          headers: getRateLimitHeaders(rateLimitResult)
+        }
+      );
+    }
+
+    // Validate each file
+    const fileErrors: string[] = [];
+    for (const file of attachments) {
+      // Check file size
+      if (file.size > maxFileSize) {
+        fileErrors.push(`${file.name} is too large (max 10MB)`);
+      }
+
+      // Check file type
+      if (!allowedTypes.includes(file.type)) {
+        fileErrors.push(`${file.name} has unsupported file type (${file.type})`);
+      }
+    }
+
+    if (fileErrors.length > 0) {
+      return NextResponse.json(
+        {
+          error: 'Invalid file attachments',
+          message: fileErrors.join(', ')
+        },
+        {
+          status: 400,
+          headers: getRateLimitHeaders(rateLimitResult)
+        }
+      );
+    }
+
     // Validate input
     const validationResult = bugReportSchema.safeParse(body);
     if (!validationResult.success) {
