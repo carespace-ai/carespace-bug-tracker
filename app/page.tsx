@@ -81,6 +81,12 @@ export default function Home() {
           environment: '',
           browserInfo: '',
         });
+        // Clear draft from localStorage
+        try {
+          localStorage.removeItem('bugReportDraft');
+        } catch (error) {
+          // Silently fail if localStorage is not available
+        }
       } else {
         setSubmitResult({
           success: false,
