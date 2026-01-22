@@ -39,3 +39,17 @@ export interface ClickUpTask {
   priority: number;
   tags: string[];
 }
+
+export interface SubmitBugResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    githubIssue: string;
+    clickupTask: string;
+    enhancedReport: {
+      title: string;
+      priority: number;
+      labels: string[];
+    };
+  };
+}
