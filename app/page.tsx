@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BugReport } from '@/lib/types';
 
 export default function Home() {
@@ -23,6 +23,40 @@ export default function Home() {
     message: string;
     data?: any;
   } | null>(null);
+
+  useEffect(() => {
+    const detectBrowser = () => {
+      const userAgent = navigator.userAgent;
+      let browserName = 'Unknown';
+      let browserVersion = 'Unknown';
+
+      if (userAgent.indexOf('Firefox') > -1) {
+        browserName = 'Firefox';
+        const match = userAgent.match(/Firefox\/(\d+\.\d+)/);
+        if (match) browserVersion = match[1];
+      } else if (userAgent.indexOf('Edg') > -1) {
+        browserName = 'Edge';
+        const match = userAgent.match(/Edg\/(\d+\.\d+)/);
+        if (match) browserVersion = match[1];
+      } else if (userAgent.indexOf('Chrome') > -1) {
+        browserName = 'Chrome';
+        const match = userAgent.match(/Chrome\/(\d+\.\d+)/);
+        if (match) browserVersion = match[1];
+      } else if (userAgent.indexOf('Safari') > -1) {
+        browserName = 'Safari';
+        const match = userAgent.match(/Version\/(\d+\.\d+)/);
+        if (match) browserVersion = match[1];
+      }
+
+      return `${browserName} ${browserVersion}`;
+    };
+
+    const browserInfo = detectBrowser();
+    setFormData((prev) => ({
+      ...prev,
+      browserInfo,
+    }));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
