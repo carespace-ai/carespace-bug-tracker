@@ -108,10 +108,14 @@ describe('rate-limiter', () => {
       });
 
       it('should handle many different IPs', () => {
+        // Force fresh module state to avoid test isolation issues
+        jest.resetModules();
+        const { getRateLimitResult: freshGetResult } = require('./rate-limiter');
+
         const ips = Array.from({ length: 100 }, (_, i) => `192.168.1.${i}`);
 
         ips.forEach(ip => {
-          const result = getRateLimitResult(ip);
+          const result = freshGetResult(ip);
           expect(result.allowed).toBe(true);
           expect(result.remaining).toBe(4);
         });

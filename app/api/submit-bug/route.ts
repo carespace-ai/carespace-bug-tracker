@@ -4,7 +4,7 @@ import { enhanceBugReport } from '@/lib/llm-service';
 import { createGitHubIssue } from '@/lib/github-service';
 import { createClickUpTask } from '@/lib/clickup-service';
 import { BugReport } from '@/lib/types';
-import { getRateLimitResult } from '@/lib/rate-limiter';
+import { getRateLimitResult, RATE_LIMIT_MAX_REQUESTS } from '@/lib/rate-limiter';
 
 const bugReportSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -24,7 +24,7 @@ const bugReportSchema = z.object({
  */
 function getRateLimitHeaders(rateLimitResult: { remaining: number; resetTime: number }) {
   return {
-    'X-RateLimit-Limit': '5',
+    'X-RateLimit-Limit': RATE_LIMIT_MAX_REQUESTS.toString(),
     'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
     'X-RateLimit-Reset': rateLimitResult.resetTime.toString()
   };

@@ -14,7 +14,7 @@ const RATE_LIMIT_WINDOW_MS = process.env.RATE_LIMIT_WINDOW_MS
   ? parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10)
   : 15 * 60 * 1000; // 15 minutes
 
-const RATE_LIMIT_MAX_REQUESTS = process.env.RATE_LIMIT_MAX_REQUESTS
+export const RATE_LIMIT_MAX_REQUESTS = process.env.RATE_LIMIT_MAX_REQUESTS
   ? parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10)
   : 5;
 
