@@ -12,11 +12,10 @@ interface ClickUpTaskResponse {
 
 export async function createClickUpTask(
   enhancedReport: EnhancedBugReport,
-  githubIssueUrl: string
+  githubIssueUrl?: string
 ): Promise<string> {
   const taskDescription = `## Bug Report from Customer
-
-**GitHub Issue**: ${githubIssueUrl}
+${githubIssueUrl ? `\n**GitHub Issue**: ${githubIssueUrl}` : ''}
 
 ### Description
 ${enhancedReport.enhancedDescription}
