@@ -20,6 +20,7 @@ export default function Home() {
   });
 
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [blobUrls, setBlobUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<SubmitBugResponse | null>(null);
 
@@ -39,6 +40,27 @@ export default function Home() {
       browserInfo,
     }));
   }, []);
+
+  // Create and manage blob URLs for image previews
+  useEffect(() => {
+    // Create blob URLs for all attachments
+    const newBlobUrls = attachments.map((file) => {
+      if (file.type.startsWith('image/')) {
+        return URL.createObjectURL(file);
+      }
+      return '';
+    });
+    setBlobUrls(newBlobUrls);
+
+    // Cleanup function to revoke blob URLs when attachments change or component unmounts
+    return () => {
+      newBlobUrls.forEach((url) => {
+        if (url) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, [attachments]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -513,7 +535,7 @@ export default function Home() {
                       {file.type.startsWith('image/') ? (
                         <div className="flex-shrink-0 w-12 h-12 rounded overflow-hidden bg-gray-200">
                           <img
-                            src={URL.createObjectURL(file)}
+                            src={blobUrls[index]}
                             alt={file.name}
                             className="w-full h-full object-cover"
                           />
