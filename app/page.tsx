@@ -94,45 +94,45 @@ export default function Home() {
           <div
             className={`mb-6 p-4 rounded-lg ${
               submitResult.success
-                ? 'bg-green-50 border border-green-200'
-                : 'bg-red-50 border border-red-200'
+                ? 'bg-green-50 border border-green-200 dark:bg-green-900 dark:border-green-700'
+                : 'bg-red-50 border border-red-200 dark:bg-red-900 dark:border-red-700'
             }`}
           >
             <p
               className={`font-semibold ${
-                submitResult.success ? 'text-green-800' : 'text-red-800'
+                submitResult.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'
               }`}
             >
               {submitResult.message}
             </p>
             {submitResult.success && submitResult.data && (
               <div className="mt-3 space-y-2 text-sm">
-                <p className="text-green-700">
+                <p className="text-green-700 dark:text-green-300">
                   <strong>GitHub Issue:</strong>{' '}
                   <a
                     href={submitResult.data.githubIssue}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline hover:text-green-900"
+                    className="underline hover:text-green-900 dark:hover:text-green-100"
                   >
                     View Issue
                   </a>
                 </p>
-                <p className="text-green-700">
+                <p className="text-green-700 dark:text-green-300">
                   <strong>ClickUp Task:</strong>{' '}
                   <a
                     href={submitResult.data.clickupTask}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline hover:text-green-900"
+                    className="underline hover:text-green-900 dark:hover:text-green-100"
                   >
                     View Task
                   </a>
                 </p>
-                <p className="text-green-700">
+                <p className="text-green-700 dark:text-green-300">
                   <strong>Priority:</strong> {submitResult.data.enhancedReport.priority}/5
                 </p>
-                <p className="text-green-700">
+                <p className="text-green-700 dark:text-green-300">
                   <strong>Labels:</strong> {submitResult.data.enhancedReport.labels.join(', ')}
                 </p>
               </div>
