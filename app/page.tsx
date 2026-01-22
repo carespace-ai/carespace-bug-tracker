@@ -125,6 +125,7 @@ export default function Home() {
           <div
             role="status"
             aria-live="polite"
+            aria-atomic="true"
             className={`mb-6 p-4 rounded-lg ${
               submitResult.success
                 ? 'bg-green-50 border border-green-200'
