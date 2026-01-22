@@ -23,11 +23,34 @@ export default function Home() {
     message: string;
     data?: any;
   } | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setSubmitResult(null);
+
+    // Validate required fields
+    const newErrors: Record<string, string> = {};
+    if (!formData.title?.trim()) {
+      newErrors.title = 'Bug title is required';
+    }
+    if (!formData.description?.trim()) {
+      newErrors.description = 'Description is required';
+    }
+    if (!formData.severity) {
+      newErrors.severity = 'Severity is required';
+    }
+    if (!formData.category) {
+      newErrors.category = 'Category is required';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
+    setIsSubmitting(true);
 
     try {
       const response = await fetch('/api/submit-bug', {
@@ -76,10 +99,18 @@ export default function Home() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
+    // Clear error for this field when user starts typing
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: '',
+      });
+    }
   };
 
   const getSeverityColorClasses = (severity: string) => {
@@ -107,6 +138,9 @@ export default function Home() {
 
         {submitResult && (
           <div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
             className={`mb-6 p-4 rounded-lg ${
               submitResult.success
                 ? 'bg-green-50 border border-green-200'
@@ -129,6 +163,7 @@ export default function Home() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-green-900"
+                    aria-label="View bug report on GitHub (opens in new tab)"
                   >
                     View Issue
                   </a>
@@ -140,6 +175,7 @@ export default function Home() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-green-900"
+                    aria-label="View bug report task on ClickUp (opens in new tab)"
                   >
                     View Task
                   </a>
@@ -166,11 +202,22 @@ export default function Home() {
               id="title"
               name="title"
               required
+              aria-required="true"
+              aria-describedby={errors.title ? "title-description title-error" : "title-description"}
+              aria-invalid={errors.title ? "true" : "false"}
               value={formData.title}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="Brief description of the bug"
             />
+            <p id="title-description" className="sr-only">
+              Provide a brief, clear title that summarizes the bug
+            </p>
+            {errors.title && (
+              <p id="title-error" className="mt-1 text-sm text-red-600" role="alert">
+                {errors.title}
+              </p>
+            )}
           </div>
 
           {/* Description */}
@@ -182,12 +229,23 @@ export default function Home() {
               id="description"
               name="description"
               required
+              aria-required="true"
+              aria-describedby={errors.description ? "description-description description-error" : "description-description"}
+              aria-invalid={errors.description ? "true" : "false"}
               value={formData.description}
               onChange={handleChange}
               rows={4}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="Detailed description of the bug"
             />
+            <p id="description-description" className="sr-only">
+              Provide a detailed description of the bug, including what went wrong
+            </p>
+            {errors.description && (
+              <p id="description-error" className="mt-1 text-sm text-red-600" role="alert">
+                {errors.description}
+              </p>
+            )}
           </div>
 
           {/* Steps to Reproduce */}
@@ -198,12 +256,16 @@ export default function Home() {
             <textarea
               id="stepsToReproduce"
               name="stepsToReproduce"
+              aria-describedby="stepsToReproduce-description"
               value={formData.stepsToReproduce}
               onChange={handleChange}
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="1. Go to...\n2. Click on...\n3. See error"
             />
+            <p id="stepsToReproduce-description" className="sr-only">
+              List the steps needed to reproduce this bug
+            </p>
           </div>
 
           {/* Expected vs Actual Behavior */}
@@ -215,12 +277,16 @@ export default function Home() {
               <textarea
                 id="expectedBehavior"
                 name="expectedBehavior"
+                aria-describedby="expectedBehavior-description"
                 value={formData.expectedBehavior}
                 onChange={handleChange}
                 rows={3}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="What should happen?"
               />
+              <p id="expectedBehavior-description" className="sr-only">
+                Describe what you expected to happen
+              </p>
             </div>
             <div>
               <label htmlFor="actualBehavior" className="block text-sm font-medium text-gray-700 mb-2">
@@ -229,12 +295,16 @@ export default function Home() {
               <textarea
                 id="actualBehavior"
                 name="actualBehavior"
+                aria-describedby="actualBehavior-description"
                 value={formData.actualBehavior}
                 onChange={handleChange}
                 rows={3}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="What actually happens?"
               />
+              <p id="actualBehavior-description" className="sr-only">
+                Describe what actually happened instead
+              </p>
             </div>
           </div>
 
@@ -248,6 +318,9 @@ export default function Home() {
                 id="severity"
                 name="severity"
                 required
+                aria-required="true"
+                aria-describedby={errors.severity ? "severity-description severity-error" : "severity-description"}
+                aria-invalid={errors.severity ? "true" : "false"}
                 value={formData.severity}
                 onChange={handleChange}
                 className={`w-full px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium ${getSeverityColorClasses(formData.severity || 'medium')}`}
@@ -257,6 +330,14 @@ export default function Home() {
                 <option value="high">🟠 High</option>
                 <option value="critical">🔴 Critical</option>
               </select>
+              <p id="severity-description" className="sr-only">
+                Select the severity level of this bug
+              </p>
+              {errors.severity && (
+                <p id="severity-error" className="mt-1 text-sm text-red-600" role="alert">
+                  {errors.severity}
+                </p>
+              )}
             </div>
             <div>
               <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
@@ -266,6 +347,9 @@ export default function Home() {
                 id="category"
                 name="category"
                 required
+                aria-required="true"
+                aria-describedby={errors.category ? "category-description category-error" : "category-description"}
+                aria-invalid={errors.category ? "true" : "false"}
                 value={formData.category}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -276,6 +360,14 @@ export default function Home() {
                 <option value="security">Security</option>
                 <option value="other">Other</option>
               </select>
+              <p id="category-description" className="sr-only">
+                Select the category that best describes this bug
+              </p>
+              {errors.category && (
+                <p id="category-error" className="mt-1 text-sm text-red-600" role="alert">
+                  {errors.category}
+                </p>
+              )}
             </div>
           </div>
 
@@ -289,11 +381,15 @@ export default function Home() {
                 type="email"
                 id="userEmail"
                 name="userEmail"
+                aria-describedby="userEmail-description"
                 value={formData.userEmail}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="your@email.com"
               />
+              <p id="userEmail-description" className="sr-only">
+                Optional: Provide your email for follow-up questions
+              </p>
             </div>
             <div>
               <label htmlFor="environment" className="block text-sm font-medium text-gray-700 mb-2">
@@ -303,11 +399,15 @@ export default function Home() {
                 type="text"
                 id="environment"
                 name="environment"
+                aria-describedby="environment-description"
                 value={formData.environment}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="Production, Staging, etc."
               />
+              <p id="environment-description" className="sr-only">
+                Specify the environment where the bug occurred
+              </p>
             </div>
           </div>
 
@@ -320,17 +420,23 @@ export default function Home() {
               type="text"
               id="browserInfo"
               name="browserInfo"
+              aria-describedby="browserInfo-description"
               value={formData.browserInfo}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="Chrome 120, Safari 17, etc."
             />
+            <p id="browserInfo-description" className="sr-only">
+              Specify the browser and version where the bug occurred
+            </p>
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
             disabled={isSubmitting}
+            aria-busy={isSubmitting}
+            aria-label={isSubmitting ? "Submitting bug report, please wait" : "Submit bug report"}
             className="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? (
