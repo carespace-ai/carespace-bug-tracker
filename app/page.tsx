@@ -178,57 +178,74 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-cyan-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">🐛 Carespace Bug Tracker</h1>
-          <p className="text-gray-600">Report bugs and we\'ll process them automatically</p>
+          <div className="flex justify-center mb-6">
+            <img
+              src="/brand/logo/logo-horizontal-color-light.svg"
+              alt="Carespace Logo"
+              className="h-16 w-auto"
+            />
+          </div>
+          <h1 className="text-4xl font-bold mb-2" style={{ color: '#421264' }}>Bug Tracker</h1>
+          <p className="text-gray-600">Report bugs and we'll process them automatically with AI</p>
         </div>
 
         {submitResult && (
           <div
             className={`mb-6 p-4 rounded-lg ${
               submitResult.success
-                ? 'bg-green-50 border border-green-200'
+                ? 'border-2'
                 : 'bg-red-50 border border-red-200'
             }`}
+            style={submitResult.success ? {
+              backgroundColor: '#f3e8ff',
+              borderColor: '#9F25F4'
+            } : undefined}
           >
             <p
               className={`font-semibold ${
-                submitResult.success ? 'text-green-800' : 'text-red-800'
+                submitResult.success ? '' : 'text-red-800'
               }`}
+              style={submitResult.success ? { color: '#421264' } : undefined}
             >
               {submitResult.message}
             </p>
             {submitResult.success && submitResult.data && (
               <div className="mt-3 space-y-2 text-sm">
-                <p className="text-green-700">
+                <p style={{ color: '#421264' }}>
                   <strong>GitHub Issue:</strong>{' '}
                   <a
                     href={submitResult.data.githubIssue}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline hover:text-green-900"
+                    className="underline hover:opacity-80"
+                    style={{ color: '#9F25F4' }}
                   >
                     View Issue
                   </a>
                 </p>
-                <p className="text-green-700">
+                <p style={{ color: '#421264' }}>
                   <strong>ClickUp Task:</strong>{' '}
                   <a
                     href={submitResult.data.clickupTask}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline hover:text-green-900"
+                    className="underline hover:opacity-80"
+                    style={{ color: '#9F25F4' }}
                   >
                     View Task
                   </a>
                 </p>
-                <p className="text-green-700">
+                <p style={{ color: '#421264' }}>
                   <strong>Priority:</strong> {submitResult.data.enhancedReport.priority}/5
                 </p>
-                <p className="text-green-700">
+                <p style={{ color: '#421264' }}>
                   <strong>Labels:</strong> {submitResult.data.enhancedReport.labels.join(', ')}
+                </p>
+                <p style={{ color: '#421264' }}>
+                  <strong>Repository:</strong> {submitResult.data.enhancedReport.targetRepo}
                 </p>
               </div>
             )}
@@ -255,7 +272,7 @@ export default function Home() {
                     ? 'border-red-300 focus:ring-red-500'
                     : isFieldValid('title')
                     ? 'border-green-300 focus:ring-green-500'
-                    : 'border-gray-300 focus:ring-indigo-500'
+                    : 'border-gray-300 focus:ring-purple-600'
                 }`}
                 placeholder="Brief description of the bug"
               />
@@ -291,7 +308,7 @@ export default function Home() {
                     ? 'border-red-300 focus:ring-red-500'
                     : isFieldValid('description')
                     ? 'border-green-300 focus:ring-green-500'
-                    : 'border-gray-300 focus:ring-indigo-500'
+                    : 'border-gray-300 focus:ring-purple-600'
                 }`}
                 placeholder="Detailed description of the bug"
               />
@@ -319,7 +336,7 @@ export default function Home() {
               value={formData.stepsToReproduce}
               onChange={handleChange}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
               placeholder="1. Go to...\n2. Click on...\n3. See error"
             />
           </div>
@@ -336,7 +353,7 @@ export default function Home() {
                 value={formData.expectedBehavior}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                 placeholder="What should happen?"
               />
             </div>
@@ -350,7 +367,7 @@ export default function Home() {
                 value={formData.actualBehavior}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                 placeholder="What actually happens?"
               />
             </div>
@@ -368,7 +385,7 @@ export default function Home() {
                 required
                 value={formData.severity}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -386,7 +403,7 @@ export default function Home() {
                 required
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
               >
                 <option value="ui">UI</option>
                 <option value="functionality">Functionality</option>
@@ -416,7 +433,7 @@ export default function Home() {
                       ? 'border-red-300 focus:ring-red-500'
                       : isFieldValid('userEmail')
                       ? 'border-green-300 focus:ring-green-500'
-                      : 'border-gray-300 focus:ring-indigo-500'
+                      : 'border-gray-300 focus:ring-purple-600'
                   }`}
                   placeholder="your@email.com"
                 />
@@ -442,7 +459,7 @@ export default function Home() {
                 name="environment"
                 value={formData.environment}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                 placeholder="Production, Staging, etc."
               />
             </div>
@@ -459,7 +476,7 @@ export default function Home() {
               name="browserInfo"
               value={formData.browserInfo}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
               placeholder="Chrome 120, Safari 17, etc."
             />
           </div>
@@ -477,7 +494,7 @@ export default function Home() {
                 onChange={handleFileChange}
                 multiple
                 accept="image/*,video/mp4,video/quicktime,text/plain,.log,application/pdf,application/json"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-800 hover:file:bg-purple-100"
               />
               <p className="mt-1 text-xs text-gray-500">
                 Upload screenshots, videos, or log files (max 10MB per file, formats: JPG, PNG, GIF, WebP, MP4, MOV, TXT, LOG, PDF, JSON)
@@ -502,8 +519,8 @@ export default function Home() {
                           />
                         </div>
                       ) : (
-                        <div className="flex-shrink-0 w-12 h-12 rounded bg-indigo-100 flex items-center justify-center">
-                          <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex-shrink-0 w-12 h-12 rounded bg-purple-100 flex items-center justify-center">
+                          <svg className="w-6 h-6 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                           </svg>
                         </div>
@@ -532,7 +549,7 @@ export default function Home() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-purple-700 text-white py-3 px-6 rounded-lg font-semibold hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center">
