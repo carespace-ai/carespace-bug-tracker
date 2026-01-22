@@ -1,43 +1,123 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ========================================
+     Carespace Design System - Base Colors
+     ======================================== */
 
-  /* Carespace Brand Colors */
+  /* Page & Layout Backgrounds */
+  --bg-page: #f8f6ec; /* Warm cream page background */
+  --bg-component: #f6f2e9; /* Neutral-100: Component background */
+  --bg-component-darker: #f1ece1; /* Neutral-200: Darker background */
+  --bg-lightest: #fffef7; /* Neutral-50: Warm white */
+
+  /* Text Colors */
+  --text-primary: #4a464c; /* Neutral-900: Primary text */
+  --text-secondary: #635d65; /* Neutral-600: Secondary text */
+  --text-tertiary: #9d989f; /* Neutral-500: Tertiary text */
+
+  /* Border Colors */
+  --border-primary: #9d989f; /* Neutral-500: Primary border */
+  --border-secondary: #e8e2d7; /* Neutral-400: Secondary border */
+  --border-focus: #4a464c; /* Neutral-900: Focus border */
+
+  /* Brand Colors */
+  --brand-main: #9F25F4; /* Primary brand purple */
+  --brand-main-soft: #c797e9; /* Soft purple */
+  --brand-second: #69e8f9; /* Cyan accent */
+  --brand-purple-dark: #421264; /* Dark purple for headers */
+
+  /* Input Colors */
+  --input-bg: #fffef7; /* Warm white */
+  --input-border: #9d989f; /* Neutral-500 */
+  --input-border-focus: #4a464c; /* Neutral-900 */
+  --input-text: #4a464c; /* Neutral-900 */
+  --input-placeholder: #9d989f; /* Neutral-500 */
+
+  /* Semantic Colors */
+  --color-success: #60e561;
+  --color-warning: #ef5f5f;
+  --color-error: #ef5f5f;
+
+  /* Legacy variables for backward compatibility */
+  --background: #f8f6ec;
+  --foreground: #4a464c;
   --primary: #421264;
   --primary-light: #C897E9;
   --accent-purple: #9F25F4;
-  --accent-cyan: #56D4E5;
-
-  /* Semantic colors */
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
+  --accent-cyan: #69e8f9;
+  --success: #60e561;
+  --warning: #ef5f5f;
+  --error: #ef5f5f;
 }
 
 @theme inline {
+  /* Expose design tokens to Tailwind */
+  --color-page-bg: var(--bg-page);
+  --color-component-bg: var(--bg-component);
+  --color-component-bg-darker: var(--bg-component-darker);
+  --color-bg-lightest: var(--bg-lightest);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+
+  --color-border-primary: var(--border-primary);
+  --color-border-secondary: var(--border-secondary);
+  --color-border-focus: var(--border-focus);
+
+  --color-brand-main: var(--brand-main);
+  --color-brand-main-soft: var(--brand-main-soft);
+  --color-brand-second: var(--brand-second);
+  --color-brand-purple-dark: var(--brand-purple-dark);
+
+  --color-input-bg: var(--input-bg);
+  --color-input-border: var(--input-border);
+  --color-input-border-focus: var(--input-border-focus);
+  --color-input-text: var(--input-text);
+  --color-input-placeholder: var(--input-placeholder);
+
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-error: var(--color-error);
+
+  /* Legacy */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-light: var(--primary-light);
   --color-accent-purple: var(--accent-purple);
   --color-accent-cyan: var(--accent-cyan);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-error: var(--error);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg-page: #300b4a;
+    --bg-component: #3b383d;
+    --bg-component-darker: #2d2a2d;
+    --bg-lightest: #4a464c;
+
+    --text-primary: #f6f2e9;
+    --text-secondary: #f1ece1;
+    --text-tertiary: #e8e2d7;
+
+    --border-primary: #9d989f;
+    --border-secondary: #635d65;
+    --border-focus: #f6f2e9;
+
+    --input-bg: #f6f2e9;
+    --input-border: #635d65;
+    --input-border-focus: #f6f2e9;
+    --input-text: #4a464c;
+
+    --background: #300b4a;
+    --foreground: #f6f2e9;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg-page);
+  color: var(--text-primary);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 

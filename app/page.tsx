@@ -178,7 +178,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-cyan-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8" style={{ background: 'var(--bg-page)' }}>
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-6">
@@ -189,7 +189,7 @@ export default function Home() {
             />
           </div>
           <h1 className="text-4xl font-bold mb-2" style={{ color: '#421264' }}>Bug Tracker</h1>
-          <p className="text-gray-600">Report bugs and we'll process them automatically with AI</p>
+          <p className="text-[var(--text-secondary)]">Report bugs and we'll process them automatically with AI</p>
         </div>
 
         {submitResult && (
@@ -252,10 +252,10 @@ export default function Home() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white shadow-xl rounded-lg p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="shadow-xl rounded-lg p-8 space-y-6" style={{ backgroundColor: 'var(--bg-component)' }}>
           {/* Title */}
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="title" className="block text-sm font-medium text-[var(--text-primary)] mb-2">
               Bug Title *
             </label>
             <div className="relative">
@@ -267,12 +267,12 @@ export default function Home() {
                 value={formData.title}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                className={`w-full px-4 py-2 bg-[var(--input-bg)] border rounded-lg focus:ring-2 focus:border-transparent ${
                   getFieldError('title')
                     ? 'border-red-300 focus:ring-red-500'
                     : isFieldValid('title')
                     ? 'border-green-300 focus:ring-green-500'
-                    : 'border-gray-300 focus:ring-purple-600'
+                    : 'border-[var(--border-primary)] focus:ring-[var(--brand-main)]'
                 }`}
                 placeholder="Brief description of the bug"
               />
@@ -291,7 +291,7 @@ export default function Home() {
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="description" className="block text-sm font-medium text-[var(--text-primary)] mb-2">
               Description *
             </label>
             <div className="relative">
@@ -303,12 +303,12 @@ export default function Home() {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 rows={4}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                className={`w-full px-4 py-2 bg-[var(--input-bg)] border rounded-lg focus:ring-2 focus:border-transparent ${
                   getFieldError('description')
                     ? 'border-red-300 focus:ring-red-500'
                     : isFieldValid('description')
                     ? 'border-green-300 focus:ring-green-500'
-                    : 'border-gray-300 focus:ring-purple-600'
+                    : 'border-[var(--border-primary)] focus:ring-[var(--brand-main)]'
                 }`}
                 placeholder="Detailed description of the bug"
               />
@@ -327,7 +327,7 @@ export default function Home() {
 
           {/* Steps to Reproduce */}
           <div>
-            <label htmlFor="stepsToReproduce" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="stepsToReproduce" className="block text-sm font-medium text-[var(--text-primary)] mb-2">
               Steps to Reproduce
             </label>
             <textarea
@@ -336,7 +336,7 @@ export default function Home() {
               value={formData.stepsToReproduce}
               onChange={handleChange}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--brand-main)] focus:border-transparent"
               placeholder="1. Go to...\n2. Click on...\n3. See error"
             />
           </div>
@@ -344,7 +344,7 @@ export default function Home() {
           {/* Expected vs Actual Behavior */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="expectedBehavior" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="expectedBehavior" className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Expected Behavior
               </label>
               <textarea
@@ -353,12 +353,12 @@ export default function Home() {
                 value={formData.expectedBehavior}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--brand-main)] focus:border-transparent"
                 placeholder="What should happen?"
               />
             </div>
             <div>
-              <label htmlFor="actualBehavior" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="actualBehavior" className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Actual Behavior
               </label>
               <textarea
@@ -367,7 +367,7 @@ export default function Home() {
                 value={formData.actualBehavior}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--brand-main)] focus:border-transparent"
                 placeholder="What actually happens?"
               />
             </div>
@@ -376,7 +376,7 @@ export default function Home() {
           {/* Severity and Category */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="severity" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="severity" className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Severity *
               </label>
               <select
@@ -385,7 +385,7 @@ export default function Home() {
                 required
                 value={formData.severity}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--brand-main)] focus:border-transparent"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -394,7 +394,7 @@ export default function Home() {
               </select>
             </div>
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="category" className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Category *
               </label>
               <select
@@ -403,7 +403,7 @@ export default function Home() {
                 required
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--brand-main)] focus:border-transparent"
               >
                 <option value="ui">UI</option>
                 <option value="functionality">Functionality</option>
@@ -417,7 +417,7 @@ export default function Home() {
           {/* Contact and Environment */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="userEmail" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="userEmail" className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Your Email
               </label>
               <div className="relative">
@@ -428,12 +428,12 @@ export default function Home() {
                   value={formData.userEmail}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                  className={`w-full px-4 py-2 bg-[var(--input-bg)] border rounded-lg focus:ring-2 focus:border-transparent ${
                     getFieldError('userEmail')
                       ? 'border-red-300 focus:ring-red-500'
                       : isFieldValid('userEmail')
                       ? 'border-green-300 focus:ring-green-500'
-                      : 'border-gray-300 focus:ring-purple-600'
+                      : 'border-[var(--border-primary)] focus:ring-[var(--brand-main)]'
                   }`}
                   placeholder="your@email.com"
                 />
@@ -450,7 +450,7 @@ export default function Home() {
               )}
             </div>
             <div>
-              <label htmlFor="environment" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="environment" className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Environment
               </label>
               <input
@@ -459,7 +459,7 @@ export default function Home() {
                 name="environment"
                 value={formData.environment}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--brand-main)] focus:border-transparent"
                 placeholder="Production, Staging, etc."
               />
             </div>
@@ -467,7 +467,7 @@ export default function Home() {
 
           {/* Browser Info */}
           <div>
-            <label htmlFor="browserInfo" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="browserInfo" className="block text-sm font-medium text-[var(--text-primary)] mb-2">
               Browser Information
             </label>
             <input
@@ -476,14 +476,14 @@ export default function Home() {
               name="browserInfo"
               value={formData.browserInfo}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--brand-main)] focus:border-transparent"
               placeholder="Chrome 120, Safari 17, etc."
             />
           </div>
 
           {/* File Attachments */}
           <div>
-            <label htmlFor="attachments" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="attachments" className="block text-sm font-medium text-[var(--text-primary)] mb-2">
               Attachments
             </label>
             <div className="mt-1">
@@ -494,9 +494,9 @@ export default function Home() {
                 onChange={handleFileChange}
                 multiple
                 accept="image/*,video/mp4,video/quicktime,text/plain,.log,application/pdf,application/json"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-800 hover:file:bg-purple-100"
+                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--brand-main)] focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-800 hover:file:bg-purple-100"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-[var(--text-tertiary)]">
                 Upload screenshots, videos, or log files (max 10MB per file, formats: JPG, PNG, GIF, WebP, MP4, MOV, TXT, LOG, PDF, JSON)
               </p>
             </div>
@@ -526,8 +526,8 @@ export default function Home() {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
-                        <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                        <p className="text-sm font-medium text-[var(--text-primary)] truncate">{file.name}</p>
+                        <p className="text-xs text-[var(--text-tertiary)]">{formatFileSize(file.size)}</p>
                       </div>
                     </div>
                     <button
@@ -549,7 +549,7 @@ export default function Home() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-purple-700 text-white py-3 px-6 rounded-lg font-semibold hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            style={{ backgroundColor: "var(--brand-main)" }} className="w-full text-white py-3 px-6 rounded-lg font-semibold hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--brand-main)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center">
@@ -564,16 +564,6 @@ export default function Home() {
             )}
           </button>
         </form>
-
-        <div className="mt-8 text-center text-sm text-gray-600">
-          <p>Your bug report will be automatically:</p>
-          <ul className="mt-2 space-y-1">
-            <li>✨ Enhanced with AI analysis</li>
-            <li>📝 Created as a GitHub issue</li>
-            <li>📊 Logged in ClickUp</li>
-            <li>🤖 Prepared with Claude Code prompts</li>
-          </ul>
-        </div>
       </div>
     </div>
   );
