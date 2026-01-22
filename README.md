@@ -202,6 +202,57 @@ bug-tracker/
 
 ## 🔒 Security Notes
 
+### Security Headers
+
+This application implements comprehensive HTTP security headers to protect against common web attacks. All headers are configured in `next.config.ts` and are automatically applied to all routes.
+
+#### Implemented Headers
+
+**Content-Security-Policy (CSP)**
+- Prevents XSS attacks by controlling which resources the browser can load
+- Allows scripts and styles from the application itself
+- Permits connections to Anthropic, GitHub, and ClickUp APIs
+- Blocks framing from external sites
+- **Note**: Includes `'unsafe-inline'` for Next.js styling compatibility. The `'unsafe-eval'` directive is only included in development mode for hot module reloading and is automatically removed in production builds for enhanced security.
+
+**X-Frame-Options: DENY**
+- Prevents clickjacking attacks by blocking the page from being embedded in iframes
+
+**X-Content-Type-Options: nosniff**
+- Prevents MIME type sniffing attacks by enforcing declared content types
+
+**Referrer-Policy: strict-origin-when-cross-origin**
+- Controls referrer information sent with requests to protect user privacy
+
+**Permissions-Policy**
+- Disables unnecessary browser features (camera, microphone, geolocation)
+- Reduces attack surface and protects user privacy
+
+**Strict-Transport-Security (HSTS)**
+- Enforces HTTPS connections in production
+- Includes subdomains for comprehensive protection
+- **Note**: Only effective when served over HTTPS
+
+**X-XSS-Protection: 1; mode=block**
+- Provides legacy XSS protection for older browsers
+- Blocks page rendering if XSS attack is detected
+
+#### Verifying Security Headers
+
+To verify headers are working correctly:
+
+```bash
+# Start the development server
+npm run dev
+
+# In another terminal, check headers
+curl -I http://localhost:3000
+```
+
+You should see all security headers in the response. In production on Vercel, HSTS will be enforced automatically.
+
+### API Security
+
 - Never commit `.env.local` to version control
 - Keep API keys secure
 - Use environment variables in Vercel for production
