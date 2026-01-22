@@ -37,13 +37,12 @@ export async function POST(request: NextRequest) {
     console.log('Enhancing bug report with LLM...');
     const enhancedReport = await enhanceBugReport(bugReport);
 
-    // Step 2: Create GitHub issue
-    console.log('Creating GitHub issue...');
-    const githubIssueUrl = await createGitHubIssue(enhancedReport);
-
-    // Step 3: Create ClickUp task
-    console.log('Creating ClickUp task...');
-    const clickupTaskUrl = await createClickUpTask(enhancedReport, githubIssueUrl);
+    // Step 2 & 3: Create GitHub issue and ClickUp task in parallel
+    console.log('Creating GitHub issue and ClickUp task in parallel...');
+    const [githubIssueUrl, clickupTaskUrl] = await Promise.all([
+      createGitHubIssue(enhancedReport),
+      createClickUpTask(enhancedReport),
+    ]);
 
     return NextResponse.json({
       success: true,
