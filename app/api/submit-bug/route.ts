@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { enhanceBugReport } from '@/lib/llm-service';
-import { createGitHubIssue } from '@/lib/github-service';
+import { createGitHubIssue, uploadFilesToGitHub } from '@/lib/github-service';
 import { createClickUpTask } from '@/lib/clickup-service';
 import { BugReport } from '@/lib/types';
 import { getRateLimitResult } from '@/lib/rate-limiter';
@@ -166,11 +166,18 @@ export async function POST(request: NextRequest) {
     console.log('Enhancing bug report with LLM...');
     const enhancedReport = await enhanceBugReport(bugReport);
 
-    // Step 2: Create GitHub issue
+    // Step 2: Upload file attachments to GitHub (if any)
+    if (attachments.length > 0) {
+      console.log(`Uploading ${attachments.length} file(s) to GitHub...`);
+      const uploadedAttachments = await uploadFilesToGitHub(attachments);
+      enhancedReport.attachments = uploadedAttachments;
+    }
+
+    // Step 3: Create GitHub issue
     console.log('Creating GitHub issue...');
     const githubIssueUrl = await createGitHubIssue(enhancedReport);
 
-    // Step 3: Create ClickUp task
+    // Step 4: Create ClickUp task
     console.log('Creating ClickUp task...');
     const clickupTaskUrl = await createClickUpTask(enhancedReport, githubIssueUrl);
 
