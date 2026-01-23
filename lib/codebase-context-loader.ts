@@ -78,92 +78,75 @@ function formatValue(value: any, indent: number = 0): string {
 }
 
 /**
- * Extract key information from codebase context for AI prompt
- * Dynamically formats based on available fields
+ * Extract only ESSENTIAL information from codebase context
+ * Keeps prompt concise to avoid token limits and API timeouts
  */
 export function formatCodebaseContextForPrompt(repo: 'frontend' | 'backend'): string {
   const context = loadRepoContext(repo);
 
   if (!context) {
-    return `## ${repo.toUpperCase()} Codebase Context\n\nNo context available.\n`;
+    return `## ${repo.toUpperCase()} Context: Not available\n`;
   }
 
-  let formatted = `## ${repo.toUpperCase()} Codebase Context\n\n`;
+  let formatted = `## ${repo.toUpperCase()} Codebase Context\n`;
 
-  // Format basic info
-  if (context.name) formatted += `**Repository:** ${context.name}\n`;
-  if (context.description) formatted += `**Description:** ${context.description}\n\n`;
+  // Basic info (concise)
+  if (context.name) formatted += `Repo: ${context.name}\n`;
 
-  // Format tech stack
+  // Tech stack (only framework and key libs)
   if (context.techStack) {
-    formatted += `**Tech Stack:**${formatValue(context.techStack, 1)}\n\n`;
-  }
-
-  // Format architecture
-  if (context.architecture) {
-    formatted += `**Architecture:**${formatValue(context.architecture, 1)}\n\n`;
-  }
-
-  // Format path aliases (important for providing specific file paths)
-  if (context.pathAliases && context.pathAliases.aliases) {
-    formatted += `**Path Aliases (use these in file references):**\n`;
-    for (const [alias, path] of Object.entries(context.pathAliases.aliases)) {
-      formatted += `- ${alias} → ${path}\n`;
+    const essentialTech: string[] = [];
+    if (context.techStack.framework) essentialTech.push(`Framework: ${context.techStack.framework}`);
+    if (context.techStack.stateManagement?.primary) essentialTech.push(`State: ${context.techStack.stateManagement.primary}`);
+    if (context.techStack.routing) essentialTech.push(`Routing: ${context.techStack.routing}`);
+    if (essentialTech.length > 0) {
+      formatted += essentialTech.join(', ') + '\n';
     }
-    formatted += '\n';
   }
 
-  // Format state management
-  if (context.stateManagement) {
-    formatted += `**State Management:**${formatValue(context.stateManagement, 1)}\n\n`;
+  // Architecture pattern (one line)
+  if (context.architecture?.pattern) {
+    formatted += `Architecture: ${context.architecture.pattern}\n`;
   }
 
-  // Format routing
-  if (context.routing) {
-    formatted += `**Routing:**${formatValue(context.routing, 1)}\n\n`;
+  // Key directories (top 8 only)
+  if (context.architecture?.keyDirectories) {
+    formatted += `\nKey Directories:\n`;
+    const topDirs = context.architecture.keyDirectories.slice(0, 8);
+    topDirs.forEach((dir: string) => {
+      const shortDir = dir.length > 80 ? dir.substring(0, 77) + '...' : dir;
+      formatted += `- ${shortDir}\n`;
+    });
   }
 
-  // Format styling
-  if (context.styling) {
-    formatted += `**Styling:**${formatValue(context.styling, 1)}\n\n`;
+  // Path aliases (essential for file references)
+  if (context.pathAliases?.aliases) {
+    formatted += `\nPath Aliases: `;
+    const aliases = Object.keys(context.pathAliases.aliases).slice(0, 6);
+    formatted += aliases.join(', ') + '\n';
   }
 
-  // Format API integration
-  if (context.api) {
-    formatted += `**API Integration:**${formatValue(context.api, 1)}\n\n`;
-  }
-
-  // Format common patterns (critical for AI to follow conventions)
-  if (context.commonPatterns) {
-    formatted += `**Common Patterns to Follow:**\n`;
-    if (Array.isArray(context.commonPatterns)) {
-      for (const pattern of context.commonPatterns) {
-        formatted += `${pattern}\n`;
-      }
-    }
-    formatted += '\n';
-  }
-
-  // Format known issues (helps AI identify similar problems)
-  if (context.knownIssues) {
-    formatted += `**Known Issues & Debugging Locations:**\n`;
-    if (Array.isArray(context.knownIssues)) {
-      for (const issue of context.knownIssues) {
-        formatted += `${issue}\n`;
-      }
-    }
-    formatted += '\n';
-  }
-
-  // Format file locations (helps AI provide specific file paths)
+  // File locations (condensed)
   if (context.fileLocations) {
-    formatted += `**Key File Locations:**${formatValue(context.fileLocations, 1)}\n\n`;
+    formatted += `\nKey Files:\n`;
+    let count = 0;
+    for (const [category, files] of Object.entries(context.fileLocations)) {
+      if (count >= 5) break; // Limit to 5 categories
+      if (Array.isArray(files) && files.length > 0) {
+        formatted += `- ${category}: ${files[0]}\n`; // Only first file per category
+        count++;
+      }
+    }
   }
 
-  // Format troubleshooting
-  if (context.troubleshooting) {
-    formatted += `**Troubleshooting Guide:**${formatValue(context.troubleshooting, 1)}\n\n`;
+  // Known issues (top 3 most relevant)
+  if (context.knownIssues && Array.isArray(context.knownIssues)) {
+    formatted += `\nKnown Issues:\n`;
+    context.knownIssues.slice(0, 3).forEach((issue: string) => {
+      const shortIssue = issue.length > 100 ? issue.substring(0, 97) + '...' : issue;
+      formatted += `- ${shortIssue}\n`;
+    });
   }
 
-  return formatted;
+  return formatted + '\n';
 }

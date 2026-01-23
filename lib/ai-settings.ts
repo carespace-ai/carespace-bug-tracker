@@ -7,88 +7,54 @@ const STORAGE_KEY = 'ai-enhancement-settings';
  */
 const DEFAULT_PROMPT_TEMPLATE: PromptTemplate = {
   name: 'Default Bug Report Enhancement',
-  template: `You are a senior software engineer analyzing bug reports for a full-stack application (Next.js, React, TypeScript, Tailwind CSS). Your goal is to provide comprehensive technical analysis that enables another AI (Claude Code) to fix the issue efficiently.
+  template: `Analyze this bug report and provide actionable technical analysis for Claude Code to fix it.
 
-## Bug Report Data
-**Title:** {{title}}
-**Description:** {{description}}
-**Steps to Reproduce:** {{stepsToReproduce}}
-**Expected Behavior:** {{expectedBehavior}}
-**Actual Behavior:** {{actualBehavior}}
-**Severity:** {{severity}}
-**Category:** {{category}}
-**Environment:** {{environment}}
-**Browser:** {{browserInfo}}
+## Bug Report
+Title: {{title}}
+Description: {{description}}
+Steps: {{stepsToReproduce}}
+Expected: {{expectedBehavior}}
+Actual: {{actualBehavior}}
+Severity: {{severity}}
+Category: {{category}}
+Environment: {{environment}}
+Browser: {{browserInfo}}
 
-## Your Analysis Tasks
+## Required Analysis
 
-1. **Enhanced Technical Description**
-   - Rewrite the bug description with technical precision
-   - Identify the specific symptoms and their technical manifestation
-   - Clarify any vague language or assumptions
-   - If expected/actual behavior is missing, infer it from the description
+1. **Enhanced Description** - Rewrite technically (2-3 sentences)
+2. **Root Cause** - Likely technical cause (1-2 sentences)
+3. **Codebase Context** - Specific files/functions to check with path aliases (2-3 sentences)
+4. **Expected Behavior** - Clear expected behavior (1 sentence)
+5. **Actual Behavior** - Clear actual behavior (1 sentence)
+6. **Gap Analysis** - Why they differ (1 sentence)
+7. **Technical Context** - Dependencies, patterns, edge cases (2 sentences)
+8. **Claude Prompt** - Step-by-step fix instructions with specific files (4-6 steps)
+9. **Metadata** - Determine if not provided:
+   - Severity: low/medium/high/critical
+   - Category: ui/functionality/performance/security/other
+   - Target Repo: frontend (UI/components/forms/routing/styling) or backend (API/database/auth/server logic)
+   - Labels: Max 5 relevant labels
+   - Priority: 1-5 based on severity
 
-2. **Root Cause Hypothesis**
-   - What is the likely technical root cause?
-   - Which layer of the stack is involved? (UI/Component/State/API/Data/Auth/etc.)
-   - What common patterns or anti-patterns might cause this?
-
-3. **Codebase Context** (CRITICAL for AI to fix the issue)
-   - Likely file locations: Which files probably need changes? (e.g., "app/page.tsx", "lib/github-service.ts")
-   - Relevant components/functions: What specific functions or components are affected?
-   - Dependencies: What services, APIs, or libraries are involved?
-   - Architecture patterns: What patterns should be followed? (e.g., "Uses circuit breaker pattern in lib/circuit-breaker.ts")
-
-4. **Behavioral Analysis**
-   - **Expected Behavior:** Clear, specific description of correct behavior
-   - **Actual Behavior:** Clear, specific description of observed behavior
-   - **Gap Analysis:** Why is the actual behavior different from expected?
-
-5. **Claude Code Action Plan**
-   - Create a detailed, actionable prompt that tells Claude Code exactly what to do
-   - Include: specific files to check, functions to modify, patterns to follow
-   - Format: "1. Check X file for Y. 2. Modify Z function to do A. 3. Test by doing B."
-   - Make it self-contained - assume Claude Code has no prior context
-
-6. **Metadata**
-   - **Severity:** low/medium/high/critical (if not provided, determine based on impact)
-   - **Category:** ui/functionality/performance/security/other (if not provided, determine based on nature)
-   - **Target Repo:** frontend or backend
-     - Frontend: UI, React components, client-side, styling, browser issues, forms, routing
-     - Backend: API routes, database, server logic, auth, data processing, external integrations
-   - **Suggested Labels:** Max 5 relevant labels (bug, enhancement, critical, ui, performance, etc.)
-   - **Priority:** 1-5 based on severity
-
-## Tech Stack Context (Use for analysis)
-- **Frontend:** Next.js 16, React 19, TypeScript, Tailwind CSS
-- **Backend:** Next.js API routes, serverless
-- **Services:** GitHub API (Octokit), ClickUp API, Anthropic Claude API
-- **Patterns:** Circuit breaker (lib/circuit-breaker.ts), Rate limiting (lib/rate-limiter.ts), Retry logic (lib/retry-handler.ts)
-- **Key Files:**
-  - Frontend: app/page.tsx (main form), app/layout.tsx
-  - API: app/api/submit-bug/route.ts
-  - Services: lib/github-service.ts, lib/clickup-service.ts, lib/llm-service.ts
-  - Chrome Extension: chrome-extension/popup.js, chrome-extension/content.js
-
-## Output Format (JSON)
-Respond ONLY with valid JSON:
+## Output (JSON only)
 {
-  "enhancedDescription": "Technical rewrite with clarity and precision. 2-4 sentences.",
-  "rootCauseHypothesis": "Likely technical root cause. 1-2 sentences.",
-  "codebaseContext": "Likely file locations (e.g. 'app/api/submit-bug/route.ts'), affected functions, relevant patterns. 2-3 sentences.",
-  "expectedBehavior": "Clear, specific expected behavior. 1-2 sentences.",
-  "actualBehavior": "Clear, specific actual behavior. 1-2 sentences.",
-  "gapAnalysis": "Why actual differs from expected. 1-2 sentences.",
-  "technicalContext": "Additional context: dependencies, architecture, edge cases. 2-3 sentences.",
-  "claudePrompt": "Detailed action plan for Claude Code. Step-by-step instructions with specific files and functions. 3-6 steps.",
-  "suggestedLabels": ["label1", "label2", "label3"],
+  "enhancedDescription": "...",
+  "rootCauseHypothesis": "...",
+  "codebaseContext": "...",
+  "expectedBehavior": "...",
+  "actualBehavior": "...",
+  "gapAnalysis": "...",
+  "technicalContext": "...",
+  "claudePrompt": "1. Check... 2. Modify... 3. Test...",
+  "suggestedLabels": ["bug", "ui"],
   "priority": 3,
   "severity": "medium",
   "category": "functionality",
   "targetRepo": "frontend"
 }`,
   variables: ['title', 'description', 'stepsToReproduce', 'expectedBehavior', 'actualBehavior', 'severity', 'category', 'environment', 'browserInfo'],
-  description: 'Comprehensive template for actionable bug analysis with codebase context'
+  description: 'Concise template optimized for token efficiency'
 };
 
 /**

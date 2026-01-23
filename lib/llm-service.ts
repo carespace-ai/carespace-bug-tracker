@@ -183,11 +183,21 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
   let prompt = fillTemplate(settings.promptTemplate.template, sanitizedBugReport);
 
   // Add codebase context to the prompt
-  // Include both frontend and backend contexts - AI will determine which is relevant
-  const frontendContext = formatCodebaseContextForPrompt('frontend');
-  const backendContext = formatCodebaseContextForPrompt('backend');
+  // Determine which context to load based on bug category/description
+  const description = (sanitizedBugReport.description + ' ' + sanitizedBugReport.title).toLowerCase();
+  const isBackendRelated = /api|database|server|auth|backend|endpoint|query|sql/i.test(description);
 
-  prompt += `\n\n## Available Codebase Context\n\nUse this context to provide specific file paths, function names, and architectural guidance in your analysis.\n\n${frontendContext}\n${backendContext}\n\n**IMPORTANT:** Reference specific files, directories, and patterns from the appropriate codebase context in your codebaseContext and claudePrompt fields.`;
+  // Load only relevant context to keep prompt concise
+  let codebaseContext = '';
+  if (isBackendRelated) {
+    const backendContext = formatCodebaseContextForPrompt('backend');
+    codebaseContext = `\n\n## Backend Codebase Context\n${backendContext}\n**Use this context for file paths and patterns in your analysis.**\n`;
+  } else {
+    const frontendContext = formatCodebaseContextForPrompt('frontend');
+    codebaseContext = `\n\n## Frontend Codebase Context\n${frontendContext}\n**Use this context for file paths and patterns in your analysis.**\n`;
+  }
+
+  prompt += codebaseContext;
 
   try {
     const message = await anthropic.messages.create({
