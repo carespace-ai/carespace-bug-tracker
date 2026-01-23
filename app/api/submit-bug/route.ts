@@ -79,17 +79,24 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
 
     // Extract form fields from FormData
+    // Helper to convert empty strings to undefined for optional fields
+    const getFormValue = (key: string): string | undefined => {
+      const value = formData.get(key);
+      if (!value || value === '') return undefined;
+      return value as string;
+    };
+
     const body = {
       title: formData.get('title') as string,
       description: formData.get('description') as string,
-      stepsToReproduce: formData.get('stepsToReproduce') as string | undefined,
-      expectedBehavior: formData.get('expectedBehavior') as string | undefined,
-      actualBehavior: formData.get('actualBehavior') as string | undefined,
-      severity: formData.get('severity') as string,
-      category: formData.get('category') as string,
-      userEmail: formData.get('userEmail') as string | undefined,
-      environment: formData.get('environment') as string | undefined,
-      browserInfo: formData.get('browserInfo') as string | undefined,
+      stepsToReproduce: getFormValue('stepsToReproduce'),
+      expectedBehavior: getFormValue('expectedBehavior'),
+      actualBehavior: getFormValue('actualBehavior'),
+      severity: getFormValue('severity'),
+      category: getFormValue('category'),
+      userEmail: getFormValue('userEmail'),
+      environment: getFormValue('environment'),
+      browserInfo: getFormValue('browserInfo'),
     };
 
     // Extract file attachments
@@ -166,8 +173,17 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validationResult = bugReportSchema.safeParse(body);
     if (!validationResult.success) {
+      // Format validation errors for better readability
+      const errorMessages = validationResult.error.issues.map(issue =>
+        `${issue.path.join('.')}: ${issue.message}`
+      ).join(', ');
+
       return NextResponse.json(
-        { error: 'Invalid input', details: validationResult.error.issues },
+        {
+          error: 'Invalid input',
+          details: errorMessages,
+          validationErrors: validationResult.error.issues
+        },
         {
           status: 400,
           headers: getRateLimitHeaders(rateLimitResult)
