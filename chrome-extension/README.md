@@ -10,6 +10,16 @@ A Chrome extension that integrates with the Carespace Bug Tracker to allow users
 🤖 **AI-Powered** - Uses Claude to enhance bug reports
 🔗 **Automatic Integration** - Creates GitHub issues and ClickUp tasks
 🎨 **Carespace Branding** - Matches the Carespace design system
+🔒 **Domain Restricted** - Only works on `*.carespace.ai` domains for security
+
+## Domain Restriction
+
+**Important:** This extension only functions on Carespace domains (`*.carespace.ai`) and localhost for development.
+
+- ✅ Works on: `app.carespace.ai`, `dashboard.carespace.ai`, `localhost`
+- ❌ Does not work on: Other websites
+
+This restriction ensures bug reports are only submitted from official Carespace applications.
 
 ## Quick Start
 

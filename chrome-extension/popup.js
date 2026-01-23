@@ -1,5 +1,40 @@
+// Helper: Check if URL is on carespace.ai domain
+function isCarespaceAiDomain(url) {
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname.endsWith('.carespace.ai') || hostname === 'carespace.ai' || hostname === 'localhost';
+  } catch (e) {
+    return false;
+  }
+}
+
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
+  // Get current tab to check domain
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  // Check if we're on a carespace.ai domain
+  if (!isCarespaceAiDomain(tab.url)) {
+    // Show domain restriction message
+    document.getElementById('bugForm').style.display = 'none';
+    const resultDiv = document.getElementById('result');
+    resultDiv.className = 'error';
+    resultDiv.innerHTML = `
+      <strong>⚠️ Domain Restriction</strong>
+      <div style="margin-top: 8px;">
+        This extension only works on <strong>*.carespace.ai</strong> domains.
+      </div>
+      <div style="margin-top: 8px; font-size: 11px;">
+        Current page: <code>${new URL(tab.url).hostname}</code>
+      </div>
+      <div style="margin-top: 12px;">
+        Please navigate to a Carespace page to report bugs.
+      </div>
+    `;
+    resultDiv.classList.remove('hidden');
+    return;
+  }
+
   // Check if popup was opened via context menu
   const contextData = await chrome.storage.local.get(['selectedText', 'pageUrl', 'pageTitle']);
 

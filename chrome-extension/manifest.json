@@ -22,9 +22,17 @@
     "storage"
   ],
   "host_permissions": [
+    "https://*.carespace.ai/*",
     "http://localhost:3000/*",
     "https://*.vercel.app/*",
     "https://carespace-bug-tracker.vercel.app/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://*.carespace.ai/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
   ],
   "icons": {
     "16": "icons/icon-16.png",

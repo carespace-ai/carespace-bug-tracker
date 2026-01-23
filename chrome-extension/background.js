@@ -2,22 +2,34 @@
 const CONTEXT_MENU_ID = 'carespace-report-bug';
 const CONTEXT_MENU_ID_SELECTION = 'carespace-report-bug-selection';
 
+// Helper: Check if URL is on carespace.ai domain
+function isCarespaceAiDomain(url) {
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname.endsWith('.carespace.ai') || hostname === 'carespace.ai' || hostname === 'localhost';
+  } catch (e) {
+    return false;
+  }
+}
+
 // Create context menus on extension install
 chrome.runtime.onInstalled.addListener(() => {
   console.log('Carespace Bug Reporter extension installed');
 
-  // Context menu for general page reporting
+  // Context menu for general page reporting (only on carespace.ai domains)
   chrome.contextMenus.create({
     id: CONTEXT_MENU_ID,
     title: 'Report Bug to Carespace',
-    contexts: ['page', 'frame', 'link', 'image', 'video']
+    contexts: ['page', 'frame', 'link', 'image', 'video'],
+    documentUrlPatterns: ['https://*.carespace.ai/*', 'http://localhost/*']
   });
 
-  // Context menu for selected text reporting
+  // Context menu for selected text reporting (only on carespace.ai domains)
   chrome.contextMenus.create({
     id: CONTEXT_MENU_ID_SELECTION,
     title: 'Report Bug with Selected Text',
-    contexts: ['selection']
+    contexts: ['selection'],
+    documentUrlPatterns: ['https://*.carespace.ai/*', 'http://localhost/*']
   });
 });
 
