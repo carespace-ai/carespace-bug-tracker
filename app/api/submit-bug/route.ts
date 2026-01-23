@@ -198,9 +198,12 @@ export async function POST(request: NextRequest) {
     const enhancedReport = await enhanceBugReport(bugReport);
 
     // Step 2: Upload attachments to GitHub (if any)
-    if (attachments.length > 0) {
-      console.log(`Uploading ${attachments.length} attachments to GitHub...`);
-      const uploadedAttachments = await uploadFilesToGitHub(attachments);
+    // Filter out empty/placeholder files before uploading
+    const validAttachments = attachments.filter(file => file && file.size > 0);
+
+    if (validAttachments.length > 0) {
+      console.log(`Uploading ${validAttachments.length} attachments to GitHub...`);
+      const uploadedAttachments = await uploadFilesToGitHub(validAttachments);
       enhancedReport.attachments = uploadedAttachments;
     }
 

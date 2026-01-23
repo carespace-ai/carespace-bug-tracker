@@ -29,6 +29,17 @@ export async function uploadFileToGitHub(
 ): Promise<string> {
   const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
 
+  // Validate environment variables
+  if (!owner) {
+    throw new Error('GITHUB_OWNER environment variable is not configured');
+  }
+  if (!REPOS.attachments) {
+    throw new Error('GITHUB_REPO environment variable is not configured');
+  }
+  if (!process.env.GITHUB_TOKEN) {
+    throw new Error('GITHUB_TOKEN environment variable is not configured');
+  }
+
   try {
     // Create a unique path using timestamp to avoid conflicts
     const timestamp = Date.now();
@@ -37,6 +48,8 @@ export async function uploadFileToGitHub(
 
     // Convert file content to base64 as required by GitHub API
     const content = fileContent.toString('base64');
+
+    console.log(`${logPrefix} Uploading file to ${owner}/${REPOS.attachments}/${filepath}`);
 
     // Upload file to repository (using attachments repo)
     const response = await octokit.repos.createOrUpdateFileContents({
@@ -59,7 +72,8 @@ export async function uploadFileToGitHub(
     return `https://raw.githubusercontent.com/${owner}/${REPOS.attachments}/${branch}/${filepath}`;
   } catch (error) {
     console.error(`${logPrefix} Error uploading file to GitHub:`, error);
-    throw new Error(`Failed to upload file to GitHub: ${filename}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to upload file to GitHub: ${errorMessage}`);
   }
 }
 
