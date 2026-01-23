@@ -123,27 +123,45 @@ export async function createGitHubIssue(enhancedReport: EnhancedBugReport, corre
         .join('\n');
   }
 
-  const issueBody = `## Bug Report
+  const issueBody = `## 🐛 Bug Report
 
 ### Description
 ${enhancedReport.enhancedDescription}
 
-### Steps to Reproduce
-${enhancedReport.stepsToReproduce || 'Not provided'}
+### Root Cause Hypothesis
+${enhancedReport.rootCauseHypothesis}
+
+### Codebase Context
+${enhancedReport.codebaseContext}
+
+---
+
+## Behavior Analysis
 
 ### Expected Behavior
-${enhancedReport.expectedBehavior || 'Not provided'}
+${enhancedReport.enhancedExpectedBehavior}
 
 ### Actual Behavior
-${enhancedReport.actualBehavior || 'Not provided'}
+${enhancedReport.enhancedActualBehavior}
+
+### Gap Analysis
+${enhancedReport.gapAnalysis}
+
+---
+
+## Reproduction Steps
+${enhancedReport.stepsToReproduce || 'Not provided'}
 ${attachmentsSection}
 
-### Technical Context
+---
+
+## Technical Context
 ${enhancedReport.technicalContext}
 
 ### Environment
 - **Severity**: ${enhancedReport.severity}
 - **Category**: ${enhancedReport.category}
+- **Priority**: ${enhancedReport.priority}/5
 - **Repository**: ${enhancedReport.targetRepo}
 - **Environment**: ${enhancedReport.environment || 'Not provided'}
 - **Browser**: ${enhancedReport.browserInfo || 'Not provided'}
@@ -151,13 +169,13 @@ ${enhancedReport.userEmail ? `- **Reporter**: ${enhancedReport.userEmail}` : ''}
 
 ---
 
-### 🤖 Claude Code Prompt
+## 🤖 Claude Code Fix Instructions
 \`\`\`
 ${enhancedReport.claudePrompt}
 \`\`\`
 
 ---
-*This issue was automatically created from a customer bug report and routed to the ${enhancedReport.targetRepo} repository.*`;
+*This issue was automatically created from a customer bug report, enhanced with AI analysis, and routed to the ${enhancedReport.targetRepo} repository.*`;
 
   try {
     const response = await octokit.issues.create({

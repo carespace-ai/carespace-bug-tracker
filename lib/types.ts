@@ -21,6 +21,11 @@ export interface EnhancedBugReport extends BugReport {
   severity: 'low' | 'medium' | 'high' | 'critical'; // Required in enhanced report (AI determines if not provided)
   category: 'ui' | 'functionality' | 'performance' | 'security' | 'other'; // Required in enhanced report (AI determines if not provided)
   enhancedDescription: string;
+  rootCauseHypothesis: string; // AI's hypothesis about the root cause
+  codebaseContext: string; // Likely files, functions, and patterns involved
+  enhancedExpectedBehavior: string; // AI-clarified expected behavior
+  enhancedActualBehavior: string; // AI-clarified actual behavior
+  gapAnalysis: string; // Why actual differs from expected
   suggestedLabels: string[];
   technicalContext: string;
   claudePrompt: string;
