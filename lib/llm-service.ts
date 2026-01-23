@@ -199,6 +199,11 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
 
   prompt += codebaseContext;
 
+  // Log prompt statistics for debugging
+  console.log('[AI Enhancement] Prompt length:', prompt.length, 'characters');
+  console.log('[AI Enhancement] Estimated tokens:', Math.ceil(prompt.length / 4));
+  console.log('[AI Enhancement] Attempting API call to Claude...');
+
   try {
     const message = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',
@@ -208,6 +213,8 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
         content: prompt
       }]
     });
+
+    console.log('[AI Enhancement] API call successful');
 
     const content = message.content[0];
     if (content.type !== 'text') {
@@ -275,9 +282,15 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
     );
 
     if (isTimeout) {
-      console.error('Request timeout while enhancing bug report. The AI service took too long to respond. Falling back to basic enhancement.');
+      console.error('[AI Enhancement] Request timeout while enhancing bug report. The AI service took too long to respond. Falling back to basic enhancement.');
     } else {
-      console.error('Error enhancing bug report:', error);
+      console.error('[AI Enhancement] Error enhancing bug report:', error);
+      // Log additional details for debugging
+      if (error instanceof Error) {
+        console.error('[AI Enhancement] Error name:', error.name);
+        console.error('[AI Enhancement] Error message:', error.message);
+        console.error('[AI Enhancement] Error stack:', error.stack);
+      }
     }
 
     // Fallback to basic enhancement using sanitized values
@@ -289,11 +302,17 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
     const filteredFallbackLabels = filterLabels(fallbackLabels, bugReport, settings);
 
     // Apply configured prompt style to the fallback Claude prompt
+    // Create a bug report with fallback values for the prompt
+    const fallbackBugReport = {
+      ...bugReport,
+      severity: fallbackSeverity,
+      category: fallbackCategory
+    };
     const fallbackBasePrompt = `Fix the following issue: ${sanitizedBugReport.title}`;
     const styledFallbackPrompt = applyPromptStyle(
       fallbackBasePrompt,
       settings.claudePromptStyle,
-      bugReport
+      fallbackBugReport
     );
 
     return {
