@@ -20,6 +20,7 @@ function loadRepoContext(repo: 'frontend' | 'backend'): any {
   try {
     // Try loading separate file first (preferred)
     const separateFilePath = join(process.cwd(), `${repo}-codebase-context.json`);
+    console.log(`[Codebase Context] Attempting to load: ${separateFilePath}`);
     try {
       const content = readFileSync(separateFilePath, 'utf-8');
       const parsed = JSON.parse(content);
@@ -29,9 +30,11 @@ function loadRepoContext(repo: 'frontend' | 'backend'): any {
       if (repo === 'frontend') cachedFrontend = context;
       if (repo === 'backend') cachedBackend = context;
 
+      console.log(`[Codebase Context] Successfully loaded ${repo} context (${content.length} bytes)`);
       return context;
-    } catch {
+    } catch (separateFileError) {
       // Separate file doesn't exist, try combined file
+      console.log(`[Codebase Context] Separate file not found, trying combined file`);
       const combinedFilePath = join(process.cwd(), 'codebase-context.json');
       const content = readFileSync(combinedFilePath, 'utf-8');
       const parsed = JSON.parse(content);
@@ -40,10 +43,11 @@ function loadRepoContext(repo: 'frontend' | 'backend'): any {
       if (repo === 'frontend') cachedFrontend = context;
       if (repo === 'backend') cachedBackend = context;
 
+      console.log(`[Codebase Context] Successfully loaded ${repo} context from combined file (${content.length} bytes)`);
       return context;
     }
   } catch (error) {
-    console.warn(`Could not load ${repo} codebase context, using empty context`);
+    console.warn(`[Codebase Context] Could not load ${repo} codebase context, using empty context. Error:`, error);
     return null;
   }
 }
