@@ -49,6 +49,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Hide form by default until auth check completes */
+#bugForm {
+  display: none;
+}
+
+/* Loading State */
+.loading-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+
 .container {
   padding: 16px;
   overflow-y: auto;

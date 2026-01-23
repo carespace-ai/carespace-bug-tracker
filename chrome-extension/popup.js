@@ -13,13 +13,15 @@ let authStatus = null;
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
+  const loadingDiv = document.getElementById('loadingAuth');
+
   // Get current tab to check domain
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   // Check if we're on a carespace.ai domain
   if (!isCarespaceAiDomain(tab.url)) {
-    // Show domain restriction message
-    document.getElementById('bugForm').style.display = 'none';
+    // Hide loading, show domain restriction message (form is hidden by default in CSS)
+    loadingDiv.classList.add('hidden');
     const resultDiv = document.getElementById('result');
     resultDiv.className = 'error';
     resultDiv.innerHTML = `
@@ -44,8 +46,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     authStatus = response;
 
     if (!response.authenticated) {
-      // Not authenticated - show login prompt
-      document.getElementById('bugForm').style.display = 'none';
+      // Hide loading, show login instructions ONLY (form stays hidden)
+      loadingDiv.classList.add('hidden');
       const resultDiv = document.getElementById('result');
       const currentSubdomain = response.subdomain || new URL(tab.url).hostname;
       const loginUrl = `https://${currentSubdomain}/login`;
@@ -53,21 +55,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       resultDiv.className = 'error';
       resultDiv.innerHTML = `
         <strong>🔒 Authentication Required</strong>
-        <div style="margin-top: 8px;">
-          You must be logged in to <strong>${currentSubdomain}</strong> to report bugs.
+        <div style="margin-top: 12px; line-height: 1.6;">
+          You must be logged in to <strong>${currentSubdomain}</strong> before you can report bugs.
         </div>
-        <div style="margin-top: 8px; font-size: 12px; color: rgba(0,0,0,0.55);">
-          Note: Being logged in to other Carespace subdomains is not sufficient.
-          You need to be authenticated on this specific subdomain.
+        <div style="margin-top: 12px; padding: 12px; background: rgba(159, 48, 237, 0.1); border-radius: 6px; font-size: 12px; line-height: 1.5;">
+          <strong>📌 Important:</strong> Being logged in to other Carespace subdomains
+          (like app.carespace.ai or dashboard.carespace.ai) is not sufficient.
+          You need to be authenticated on <strong>${currentSubdomain}</strong> specifically.
         </div>
-        <div style="margin-top: 12px;">
-          <a href="${loginUrl}" target="_blank" style="color: #9f30ed; text-decoration: underline; font-weight: 500;">
+        <div style="margin-top: 16px;">
+          <a href="${loginUrl}" target="_blank"
+             style="display: inline-block; padding: 10px 20px; background: #9f30ed; color: white;
+                    text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 14px;">
             Log in to ${currentSubdomain}
           </a>
         </div>
         <div style="margin-top: 12px;">
-          <button id="retryAuth" style="padding: 8px 16px; background: #9f30ed; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
-            Retry After Login
+          <button id="retryAuth"
+                  style="padding: 8px 16px; background: transparent; color: #9f30ed;
+                         border: 1px solid #9f30ed; border-radius: 6px; cursor: pointer;
+                         font-weight: 500; font-size: 13px;">
+            I've Logged In - Retry
           </button>
         </div>
       `;
@@ -78,8 +86,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.reload();
       });
 
+      // Form stays hidden - don't show it
       return;
     }
+
+    // User IS authenticated - hide loading, show the form
+    loadingDiv.classList.add('hidden');
+    document.getElementById('bugForm').style.display = 'block';
 
     // Pre-fill email if available
     if (response.userInfo && response.userInfo.email) {
@@ -89,8 +102,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   } catch (error) {
     console.warn('[Carespace Bug Reporter] Could not check auth status:', error);
-    // If content script not loaded yet, allow submission but warn
-    console.log('[Carespace Bug Reporter] Proceeding without auth check');
+
+    // Hide loading, show error message (don't show form)
+    loadingDiv.classList.add('hidden');
+    const resultDiv = document.getElementById('result');
+    resultDiv.className = 'error';
+    resultDiv.innerHTML = `
+      <strong>⚠️ Unable to Verify Authentication</strong>
+      <div style="margin-top: 12px; line-height: 1.6;">
+        The extension couldn't verify your authentication status on this page.
+      </div>
+      <div style="margin-top: 12px; font-size: 12px; line-height: 1.5;">
+        This may happen if the page just loaded. Try:
+      </div>
+      <ol style="margin: 8px 0 0 20px; font-size: 12px; line-height: 1.8;">
+        <li>Refresh the page</li>
+        <li>Wait a few seconds for the page to fully load</li>
+        <li>Try opening the extension again</li>
+      </ol>
+      <div style="margin-top: 16px;">
+        <button id="retryAuthError"
+                style="padding: 10px 20px; background: #9f30ed; color: white;
+                       border: none; border-radius: 6px; cursor: pointer;
+                       font-weight: 500; font-size: 14px;">
+          Retry
+        </button>
+      </div>
+    `;
+    resultDiv.classList.remove('hidden');
+
+    // Add retry button listener
+    document.getElementById('retryAuthError').addEventListener('click', () => {
+      window.location.reload();
+    });
+
+    // Form stays hidden
+    return;
   }
 
   // Check if popup was opened via context menu
