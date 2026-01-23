@@ -12,8 +12,8 @@ export default function Home() {
     stepsToReproduce: '',
     expectedBehavior: '',
     actualBehavior: '',
-    severity: 'medium',
-    category: 'functionality',
+    severity: undefined,
+    category: undefined,
     userEmail: '',
     environment: '',
     browserInfo: '',
@@ -104,8 +104,8 @@ export default function Home() {
           stepsToReproduce: '',
           expectedBehavior: '',
           actualBehavior: '',
-          severity: 'medium',
-          category: 'functionality',
+          severity: undefined,
+          category: undefined,
           userEmail: '',
           environment: '',
           browserInfo: '',
@@ -395,46 +395,56 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Severity and Category */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="severity" className="block text-sm font-medium text-[rgba(0,0,0,0.75)] mb-2">
-                Severity *
-              </label>
-              <select
-                id="severity"
-                name="severity"
-                required
-                value={formData.severity}
-                onChange={handleChange}
-                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.15)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
+          {/* Advanced Options (Collapsible) */}
+          <details className="border border-[#e8e2d7] rounded-lg">
+            <summary className="cursor-pointer px-4 py-3 bg-[#f6f2e9] rounded-lg hover:bg-[#e8e2d7] transition-colors text-sm font-medium text-[rgba(0,0,0,0.55)] select-none">
+              Advanced Options
+            </summary>
+            <div className="p-4 border-t border-[#e8e2d7]">
+              <p className="text-xs text-[rgba(0,0,0,0.45)] mb-4">
+                Leave blank to let AI determine severity and category automatically
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="severity" className="block text-sm font-medium text-[rgba(0,0,0,0.75)] mb-2">
+                    Severity
+                  </label>
+                  <select
+                    id="severity"
+                    name="severity"
+                    value={formData.severity || ''}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.15)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
+                  >
+                    <option value="">Auto-detect</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="category" className="block text-sm font-medium text-[rgba(0,0,0,0.75)] mb-2">
+                    Category
+                  </label>
+                  <select
+                    id="category"
+                    name="category"
+                    value={formData.category || ''}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.15)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
+                  >
+                    <option value="">Auto-detect</option>
+                    <option value="ui">UI</option>
+                    <option value="functionality">Functionality</option>
+                    <option value="performance">Performance</option>
+                    <option value="security">Security</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
             </div>
-            <div>
-              <label htmlFor="category" className="block text-sm font-medium text-[rgba(0,0,0,0.75)] mb-2">
-                Category *
-              </label>
-              <select
-                id="category"
-                name="category"
-                required
-                value={formData.category}
-                onChange={handleChange}
-                className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[rgba(255,255,255,0.15)] rounded-lg focus:ring-2 focus:ring-[#f4ebff] focus:border-[#9f30ed]"
-              >
-                <option value="ui">UI</option>
-                <option value="functionality">Functionality</option>
-                <option value="performance">Performance</option>
-                <option value="security">Security</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-          </div>
+          </details>
 
           {/* Contact and Environment */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

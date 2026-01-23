@@ -13,7 +13,9 @@ const DEFAULT_PROMPT_TEMPLATE: PromptTemplate = {
 3. Technical context for developers
 4. A specific prompt for Claude Code to fix this issue
 5. Priority score (1-5, where 5 is critical)
-6. Target repository: Determine if this bug belongs to "frontend" (UI, React components, client-side behavior, styling, browser compatibility) or "backend" (API, database, server logic, authentication, data processing)
+6. Severity (if not provided): low, medium, high, or critical
+7. Category (if not provided): ui, functionality, performance, security, or other
+8. Target repository: Determine if this bug belongs to "frontend" (UI, React components, client-side behavior, styling, browser compatibility) or "backend" (API, database, server logic, authentication, data processing)
 
 Bug Report:
 Title: {{title}}
@@ -26,9 +28,12 @@ Category: {{category}}
 Environment: {{environment}}
 Browser: {{browserInfo}}
 
-Analyze the bug and determine if it's a frontend or backend issue based on:
-- Frontend: UI/UX issues, rendering problems, client-side validation, styling, browser-specific bugs, responsive design, user interactions
-- Backend: API errors, database issues, server-side logic, authentication/authorization, data processing, performance at server level
+Analysis Instructions:
+- If severity is not provided (empty), determine it based on the bug's impact
+- If category is not provided (empty), determine it based on the bug's nature
+- Analyze the bug and determine if it's a frontend or backend issue based on:
+  - Frontend: UI/UX issues, rendering problems, client-side validation, styling, browser-specific bugs, responsive design, user interactions
+  - Backend: API errors, database issues, server-side logic, authentication/authorization, data processing, performance at server level
 
 Respond in JSON format:
 {
@@ -37,6 +42,8 @@ Respond in JSON format:
   "technicalContext": "context for developers",
   "claudePrompt": "specific prompt for Claude Code",
   "priority": 3,
+  "severity": "medium",
+  "category": "functionality",
   "targetRepo": "frontend"
 }`,
   variables: ['title', 'description', 'stepsToReproduce', 'expectedBehavior', 'actualBehavior', 'severity', 'category', 'environment', 'browserInfo'],

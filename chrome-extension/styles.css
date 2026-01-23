@@ -275,6 +275,60 @@ input[type="file"]::file-selector-button:hover {
   color: var(--text-tertiary);
 }
 
+/* Advanced Options (Collapsible) */
+.advanced-options {
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0;
+  margin: 0;
+}
+
+.advanced-options summary {
+  padding: 10px 12px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--surface-secondary);
+  border-radius: 6px;
+  transition: background 0.2s;
+  list-style: none;
+  display: flex;
+  align-items: center;
+}
+
+.advanced-options summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced-options summary::before {
+  content: '▶';
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+.advanced-options[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.advanced-options summary:hover {
+  background: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.advanced-options-content {
+  padding: 12px;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 0;
+}
+
+.advanced-options[open] summary {
+  border-radius: 6px 6px 0 0;
+}
+
 /* Utility */
 .hidden {
   display: none !important;

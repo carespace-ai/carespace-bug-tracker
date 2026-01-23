@@ -4,8 +4,8 @@ export interface BugReport {
   stepsToReproduce?: string;
   expectedBehavior?: string;
   actualBehavior?: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  category: 'ui' | 'functionality' | 'performance' | 'security' | 'other';
+  severity?: 'low' | 'medium' | 'high' | 'critical';
+  category?: 'ui' | 'functionality' | 'performance' | 'security' | 'other';
   userEmail?: string;
   environment?: string;
   browserInfo?: string;
@@ -18,6 +18,8 @@ export interface BugReport {
 }
 
 export interface EnhancedBugReport extends BugReport {
+  severity: 'low' | 'medium' | 'high' | 'critical'; // Required in enhanced report (AI determines if not provided)
+  category: 'ui' | 'functionality' | 'performance' | 'security' | 'other'; // Required in enhanced report (AI determines if not provided)
   enhancedDescription: string;
   suggestedLabels: string[];
   technicalContext: string;

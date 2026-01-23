@@ -154,6 +154,30 @@ select option {
               0 2px 4px 0 rgba(0, 0, 0, 0.02);
 }
 
+/* Advanced Options (Collapsible) */
+details summary {
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 0.2s;
+}
+
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+details summary::before {
+  content: '▶';
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+details[open] summary::before {
+  transform: rotate(90deg);
+}
+
 /* Maintain responsive font sizes for larger screens */
 @media (min-width: 768px) {
   input,

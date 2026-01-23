@@ -81,8 +81,8 @@ function fillTemplate(template: string, bugReport: BugReport): string {
     stepsToReproduce: bugReport.stepsToReproduce || 'Not provided',
     expectedBehavior: bugReport.expectedBehavior || 'Not provided',
     actualBehavior: bugReport.actualBehavior || 'Not provided',
-    severity: bugReport.severity,
-    category: bugReport.category,
+    severity: bugReport.severity || 'Not provided (please determine)',
+    category: bugReport.category || 'Not provided (please determine)',
     environment: bugReport.environment || 'Not provided',
     browserInfo: bugReport.browserInfo || 'Not provided'
   };
@@ -214,20 +214,33 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
       bugReport
     );
 
+    // Use AI-determined severity and category if not provided by user
+    const finalSeverity = bugReport.severity || enhanced.severity || 'medium';
+    const finalCategory = bugReport.category || enhanced.category || 'functionality';
+
+    // Validate AI-provided values
+    const validSeverities: Array<'low' | 'medium' | 'high' | 'critical'> = ['low', 'medium', 'high', 'critical'];
+    const validCategories: Array<'ui' | 'functionality' | 'performance' | 'security' | 'other'> = ['ui', 'functionality', 'performance', 'security', 'other'];
+
+    const severity: 'low' | 'medium' | 'high' | 'critical' = (validSeverities.includes(finalSeverity as any)) ? finalSeverity as any : 'medium';
+    const category: 'ui' | 'functionality' | 'performance' | 'security' | 'other' = (validCategories.includes(finalCategory as any)) ? finalCategory as any : 'functionality';
+
     // Determine target repository with fallback logic
     let targetRepo: 'frontend' | 'backend' = enhanced.targetRepo || 'frontend';
     if (targetRepo !== 'frontend' && targetRepo !== 'backend') {
       // If AI returns invalid value, use category-based fallback
-      targetRepo = determineRepoFromCategory(bugReport.category);
+      targetRepo = determineRepoFromCategory(category as BugReport['category']);
     }
 
     return {
       ...bugReport,
+      severity,
+      category,
       enhancedDescription: enhanced.enhancedDescription,
       suggestedLabels: filteredLabels,
       technicalContext: enhanced.technicalContext,
       claudePrompt: styledPrompt,
-      priority: calculatePriority(bugReport.severity, settings),
+      priority: calculatePriority(severity, settings),
       targetRepo
     };
   } catch (error) {
@@ -245,7 +258,11 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
     }
 
     // Fallback to basic enhancement using sanitized values
-    const fallbackLabels = [sanitizedBugReport.category, sanitizedBugReport.severity];
+    // Provide defaults if user didn't specify
+    const fallbackSeverity: 'low' | 'medium' | 'high' | 'critical' = bugReport.severity || 'medium';
+    const fallbackCategory: 'ui' | 'functionality' | 'performance' | 'security' | 'other' = bugReport.category || 'functionality';
+
+    const fallbackLabels = [fallbackCategory, fallbackSeverity];
     const filteredFallbackLabels = filterLabels(fallbackLabels, bugReport, settings);
 
     // Apply configured prompt style to the fallback Claude prompt
@@ -258,12 +275,14 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
 
     return {
       ...bugReport,
+      severity: fallbackSeverity,
+      category: fallbackCategory,
       enhancedDescription: sanitizedBugReport.description,
       suggestedLabels: filteredFallbackLabels,
-      technicalContext: `Category: ${sanitizedBugReport.category}, Severity: ${sanitizedBugReport.severity}`,
+      technicalContext: `Category: ${fallbackCategory}, Severity: ${fallbackSeverity}`,
       claudePrompt: styledFallbackPrompt,
-      priority: calculatePriority(sanitizedBugReport.severity, settings),
-      targetRepo: determineRepoFromCategory(sanitizedBugReport.category)
+      priority: calculatePriority(fallbackSeverity, settings),
+      targetRepo: determineRepoFromCategory(fallbackCategory)
     };
   }
 }

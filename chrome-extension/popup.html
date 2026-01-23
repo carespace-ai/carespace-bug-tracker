@@ -77,29 +77,6 @@
         </div>
       </div>
 
-      <!-- Severity and Category -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="severity">Severity *</label>
-          <select id="severity" name="severity" required>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="category">Category *</label>
-          <select id="category" name="category" required>
-            <option value="functionality">Functionality</option>
-            <option value="ui">UI</option>
-            <option value="performance">Performance</option>
-            <option value="security">Security</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-      </div>
-
       <!-- Email -->
       <div class="form-group">
         <label for="userEmail">Your Email (optional)</label>
@@ -109,6 +86,42 @@
           name="userEmail"
           placeholder="your@email.com"
         >
+      </div>
+
+      <!-- Advanced Options (Collapsible) -->
+      <div class="form-group">
+        <details class="advanced-options">
+          <summary>Advanced Options</summary>
+          <div class="advanced-options-content">
+            <p class="help-text" style="margin-bottom: 12px;">
+              Leave blank to let AI determine severity and category automatically
+            </p>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="severity">Severity</label>
+                <select id="severity" name="severity">
+                  <option value="">Auto-detect</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="category">Category</label>
+                <select id="category" name="category">
+                  <option value="">Auto-detect</option>
+                  <option value="ui">UI</option>
+                  <option value="functionality">Functionality</option>
+                  <option value="performance">Performance</option>
+                  <option value="security">Security</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </details>
       </div>
 
       <!-- Screenshot Capture -->

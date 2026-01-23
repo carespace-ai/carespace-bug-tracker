@@ -70,6 +70,14 @@ document.getElementById('bugForm').addEventListener('submit', async (e) => {
       }
     }
 
+    // Remove empty severity and category (let AI determine)
+    if (!formData.get('severity')) {
+      formData.delete('severity');
+    }
+    if (!formData.get('category')) {
+      formData.delete('category');
+    }
+
     // Get API URL from config
     const apiUrl = await CONFIG.getApiUrl();
 
