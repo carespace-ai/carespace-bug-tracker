@@ -206,7 +206,7 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
 
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-3-haiku-20240307', // Using Haiku due to API key model access limitations
       max_tokens: 2000,
       messages: [{
         role: 'user',
