@@ -16,95 +16,44 @@
  */
 async function checkAuthentication() {
   const currentDomain = window.location.hostname;
+  const currentUrl = window.location.origin;
 
-  // Option 1: API call to verify session on current subdomain (RECOMMENDED)
-  // This is the most reliable way to check auth on the specific subdomain
-  try {
-    // Customize this endpoint to match your auth verification endpoint
-    // Examples:
-    // - /api/auth/me
-    // - /api/user/profile
-    // - /api/auth/verify
-    const response = await fetch('/api/auth/me', {
-      method: 'GET',
-      credentials: 'include', // Include cookies for this subdomain
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
+  // FusionAuth authentication check
+  // Check for Carespace FusionAuth tokens in localStorage
+  const token = localStorage.getItem('_auth_carespace_token');
+  const userDataStr = localStorage.getItem('_auth_carespace_user');
 
-    if (response.ok) {
-      const userData = await response.json();
-      // Customize based on your API response structure
-      const token = userData.token || userData.accessToken || 'verified';
-      return {
-        authenticated: true,
-        token: token,
-        subdomain: currentDomain
-      };
-    }
-  } catch (error) {
-    console.warn('[Carespace Bug Reporter] API auth check failed:', error);
-  }
-
-  // Option 2: Check for subdomain-specific auth indicators in DOM
-  // Look for elements that only appear when user is logged in
-  const userMenuElement = document.querySelector('[data-user-authenticated]') ||
-                         document.querySelector('.user-profile') ||
-                         document.querySelector('[data-user-id]') ||
-                         document.querySelector('.auth-user');
-
-  if (userMenuElement) {
-    const userId = userMenuElement.dataset.userId ||
-                  userMenuElement.getAttribute('data-user-id');
-    return {
-      authenticated: true,
-      token: 'dom-verified',
-      subdomain: currentDomain
-    };
-  }
-
-  // Option 3: Check localStorage with subdomain-specific key
-  // Some apps store auth per subdomain with keys like 'auth:moi.carespace.ai'
-  const subdomainAuthKey = `auth:${currentDomain}`;
-  const subdomainToken = localStorage.getItem(subdomainAuthKey);
-  if (subdomainToken) {
-    return {
-      authenticated: true,
-      token: subdomainToken,
-      subdomain: currentDomain
-    };
-  }
-
-  // Option 4: Check for global auth but verify it's valid for this subdomain
-  // Only use this as fallback - not recommended as primary check
-  const globalToken = localStorage.getItem('authToken') ||
-                     localStorage.getItem('token');
-
-  if (globalToken) {
-    // Try to verify the token is valid for this subdomain
-    // by checking if there's a user object in localStorage
+  if (token && userDataStr) {
     try {
-      const userDataStr = localStorage.getItem('user') ||
-                         localStorage.getItem('userData');
-      if (userDataStr) {
-        const userData = JSON.parse(userDataStr);
-        // Check if user data has current subdomain info
-        if (userData.currentSubdomain === currentDomain ||
-            userData.lastSeenAt === currentDomain) {
-          return {
-            authenticated: true,
-            token: globalToken,
-            subdomain: currentDomain
-          };
-        }
+      const userData = JSON.parse(userDataStr);
+
+      // Verify the user is authenticated on THIS specific subdomain
+      // FusionAuth stores client.domain which must match current domain
+      const clientDomain = userData.client?.domain;
+
+      if (clientDomain === currentUrl || clientDomain === `https://${currentDomain}`) {
+        console.log('[Carespace Bug Reporter] Authenticated on', currentDomain);
+        return {
+          authenticated: true,
+          token: token,
+          subdomain: currentDomain
+        };
+      } else {
+        console.warn('[Carespace Bug Reporter] User authenticated on different subdomain:', clientDomain);
+        return {
+          authenticated: false,
+          token: null,
+          subdomain: currentDomain,
+          message: `You are logged in to ${clientDomain}, not ${currentUrl}`
+        };
       }
-    } catch (e) {
-      // Invalid user data, not authenticated
+    } catch (error) {
+      console.error('[Carespace Bug Reporter] Failed to parse user data:', error);
     }
   }
 
   // Not authenticated on current subdomain
+  console.log('[Carespace Bug Reporter] No FusionAuth token found for', currentDomain);
   return {
     authenticated: false,
     token: null,
@@ -117,18 +66,15 @@ async function checkAuthentication() {
  * This can be used to pre-fill the email field
  */
 function getUserInfo() {
-  // Try to get user info from common sources
-  // Customize based on where your app stores user data
-
-  // Check localStorage
-  const userDataStr = localStorage.getItem('user') || localStorage.getItem('userData');
+  // Get user info from FusionAuth localStorage
+  const userDataStr = localStorage.getItem('_auth_carespace_user');
   if (userDataStr) {
     try {
       const userData = JSON.parse(userDataStr);
       return {
-        email: userData.email || userData.userEmail,
-        name: userData.name || userData.userName,
-        userId: userData.id || userData.userId
+        email: userData.profile?.email,
+        name: userData.profile?.fullName || `${userData.profile?.firstName} ${userData.profile?.lastName}`,
+        userId: userData.id
       };
     } catch (e) {
       console.warn('[Carespace Bug Reporter] Failed to parse user data', e);

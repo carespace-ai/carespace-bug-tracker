@@ -339,6 +339,67 @@ async function validateAuthToken(token: string): Promise<boolean> {
 
 ## Example Configurations
 
+### FusionAuth (Carespace Configuration)
+
+**Current implementation** - The extension is pre-configured for FusionAuth:
+
+```javascript
+async function checkAuthentication() {
+  const currentDomain = window.location.hostname;
+  const currentUrl = window.location.origin;
+
+  // Check for Carespace FusionAuth tokens in localStorage
+  const token = localStorage.getItem('_auth_carespace_token');
+  const userDataStr = localStorage.getItem('_auth_carespace_user');
+
+  if (token && userDataStr) {
+    const userData = JSON.parse(userDataStr);
+    const clientDomain = userData.client?.domain;
+
+    // Verify user is authenticated on THIS specific subdomain
+    if (clientDomain === currentUrl || clientDomain === `https://${currentDomain}`) {
+      return {
+        authenticated: true,
+        token: token,
+        subdomain: currentDomain
+      };
+    } else {
+      return {
+        authenticated: false,
+        token: null,
+        subdomain: currentDomain,
+        message: `Logged in to ${clientDomain}, not ${currentUrl}`
+      };
+    }
+  }
+
+  return { authenticated: false, token: null, subdomain: currentDomain };
+}
+
+function getUserInfo() {
+  const userDataStr = localStorage.getItem('_auth_carespace_user');
+  if (userDataStr) {
+    const userData = JSON.parse(userDataStr);
+    return {
+      email: userData.profile?.email,
+      name: userData.profile?.fullName,
+      userId: userData.id
+    };
+  }
+  return null;
+}
+```
+
+**FusionAuth localStorage keys:**
+- `_auth_carespace_token` - JWT access token
+- `_auth_carespace_refresh_token` - Refresh token
+- `_auth_carespace_user` - User object with profile and client info
+- `_auth_carespace_credentials` - JWT payload
+- `_auth_carespace_type` - Token type (Bearer)
+
+**Subdomain verification:**
+The user object contains `client.domain` which must match the current domain. This ensures users are authenticated on the specific subdomain they're visiting.
+
 ### Next.js + NextAuth
 
 ```javascript
