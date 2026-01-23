@@ -1,7 +1,3 @@
-// Configuration - Update this with your deployed URL
-const API_URL = 'http://localhost:3000/api/submit-bug';
-// For production: const API_URL = 'https://your-bug-tracker.vercel.app/api/submit-bug';
-
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
   // Check if popup was opened via context menu
@@ -74,8 +70,11 @@ document.getElementById('bugForm').addEventListener('submit', async (e) => {
       }
     }
 
+    // Get API URL from config
+    const apiUrl = await CONFIG.getApiUrl();
+
     // Submit to API
-    const response = await fetch(API_URL, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       body: formData
     });

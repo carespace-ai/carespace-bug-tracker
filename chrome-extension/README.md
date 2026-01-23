@@ -11,46 +11,45 @@ A Chrome extension that integrates with the Carespace Bug Tracker to allow users
 🔗 **Automatic Integration** - Creates GitHub issues and ClickUp tasks
 🎨 **Carespace Branding** - Matches the Carespace design system
 
-## Installation
+## Quick Start
 
-### Development Mode (Local Testing)
+### For Production Use (Recommended)
 
-1. **Start the Bug Tracker Backend**
+The extension is **production-ready by default** and configured to use:
+`https://carespace-bug-tracker.vercel.app/api/submit-bug`
+
+**Install in 30 seconds:**
+1. Open Chrome → `chrome://extensions/`
+2. Enable "Developer mode" (toggle in top right)
+3. Click "Load unpacked"
+4. Select the `chrome-extension` folder
+5. ✅ Done! Start reporting bugs.
+
+**See [QUICKSTART.md](./QUICKSTART.md) for deployment guide.**
+
+### For Local Development
+
+To test against localhost:
+
+1. **Start backend locally**
    ```bash
    cd /Users/fusuma/dev/carespace/carespace-bug-tracker
    npm run dev
    ```
-   Backend should be running at http://localhost:3000
 
-2. **Load the Extension in Chrome**
-   - Open Chrome and navigate to `chrome://extensions/`
-   - Enable "Developer mode" (toggle in top right)
-   - Click "Load unpacked"
-   - Select the `chrome-extension` folder
+2. **Load extension** (steps above)
 
-3. **Verify Installation**
-   - You should see the Carespace Bug Reporter icon in your extensions toolbar
-   - Right-click on any webpage → You should see "Report Bug to Carespace" in the context menu
+3. **Override API URL** (in extension popup console):
+   ```javascript
+   CONFIG.setApiUrl('http://localhost:3000/api/submit-bug')
+   ```
 
-### Production Mode (Deployed Backend)
+4. Reload popup to test against localhost
 
-1. **Update API URL**
-   - Open `popup.js`
-   - Change line 2 to your deployed URL:
-     ```javascript
-     const API_URL = 'https://your-bug-tracker.vercel.app/api/submit-bug';
-     ```
-
-2. **Update Host Permissions**
-   - Open `manifest.json`
-   - Update `host_permissions` to include your domain:
-     ```json
-     "host_permissions": [
-       "https://your-bug-tracker.vercel.app/*"
-     ]
-     ```
-
-3. **Load Extension** (same as development mode steps 2-3)
+5. **Reset to production**:
+   ```javascript
+   CONFIG.clearApiUrl()
+   ```
 
 ## Usage
 
@@ -109,14 +108,32 @@ The system creates:
 
 ### API Endpoint
 
-Edit `popup.js` line 2:
+**Production (Default)**:
+The extension uses production by default:
 ```javascript
-const API_URL = 'http://localhost:3000/api/submit-bug';
+// config.js
+PRODUCTION_API_URL: 'https://carespace-bug-tracker.vercel.app/api/submit-bug'
 ```
 
-For production:
+**Override for Testing** (in extension popup console):
 ```javascript
-const API_URL = 'https://your-bug-tracker.vercel.app/api/submit-bug';
+// Use localhost
+CONFIG.setApiUrl('http://localhost:3000/api/submit-bug')
+
+// Use staging
+CONFIG.setApiUrl('https://staging.example.com/api/submit-bug')
+
+// Reset to production
+CONFIG.clearApiUrl()
+
+// Check current URL
+await CONFIG.getApiUrl()
+```
+
+**Permanent Change**:
+Edit `config.js` and update `PRODUCTION_API_URL`, then rebuild:
+```bash
+./build.sh
 ```
 
 ### Branding
@@ -139,18 +156,23 @@ The extension requires these permissions (see `manifest.json`):
 
 ```
 chrome-extension/
-├── manifest.json          # Extension configuration
+├── manifest.json          # Extension configuration (Manifest V3)
+├── config.js             # Environment configuration (auto-detects prod vs dev)
 ├── popup.html            # Main form UI
 ├── popup.js              # Form logic and API integration
 ├── background.js         # Service worker (context menu)
 ├── styles.css            # Carespace design system styles
+├── build.sh              # Production build script
 ├── icons/                # Extension icons (16, 48, 128)
 │   ├── icon-16.png
 │   ├── icon-48.png
 │   └── icon-128.png
 ├── images/
 │   └── logo.svg          # Carespace logo
-└── README.md             # This file
+├── README.md             # Feature documentation (this file)
+├── QUICKSTART.md         # 5-minute deployment guide
+├── PRODUCTION.md         # Chrome Web Store publishing guide
+└── PRIVACY.md            # Privacy policy template
 ```
 
 ## Backend Requirements
