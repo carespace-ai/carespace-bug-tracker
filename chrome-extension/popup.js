@@ -47,17 +47,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Not authenticated - show login prompt
       document.getElementById('bugForm').style.display = 'none';
       const resultDiv = document.getElementById('result');
+      const currentSubdomain = response.subdomain || new URL(tab.url).hostname;
+      const loginUrl = `https://${currentSubdomain}/login`;
+
       resultDiv.className = 'error';
       resultDiv.innerHTML = `
         <strong>🔒 Authentication Required</strong>
         <div style="margin-top: 8px;">
-          You must be logged in to Carespace to report bugs.
+          You must be logged in to <strong>${currentSubdomain}</strong> to report bugs.
+        </div>
+        <div style="margin-top: 8px; font-size: 12px; color: rgba(0,0,0,0.55);">
+          Note: Being logged in to other Carespace subdomains is not sufficient.
+          You need to be authenticated on this specific subdomain.
         </div>
         <div style="margin-top: 12px;">
-          Please <a href="https://app.carespace.ai/login" target="_blank" style="color: #9f30ed; text-decoration: underline;">log in to Carespace</a> and try again.
+          <a href="${loginUrl}" target="_blank" style="color: #9f30ed; text-decoration: underline; font-weight: 500;">
+            Log in to ${currentSubdomain}
+          </a>
         </div>
         <div style="margin-top: 12px;">
-          <button id="retryAuth" style="padding: 8px 16px; background: #9f30ed; color: white; border: none; border-radius: 4px; cursor: pointer;">
+          <button id="retryAuth" style="padding: 8px 16px; background: #9f30ed; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
             Retry After Login
           </button>
         </div>

@@ -44,6 +44,20 @@ The extension checks for common auth patterns (cookies, localStorage, JWT). To c
 
 **Quick config** - Edit `content.js` lines 15-50 to match your authentication system.
 
+**Important:** The extension verifies authentication on the **current subdomain** specifically. Being logged in to `app.carespace.ai` does not allow bug reporting on `moi.carespace.ai`. Users must be authenticated on the exact subdomain they're visiting.
+
+## Incognito Mode
+
+The extension supports incognito/private browsing mode, but you must manually enable it:
+
+1. Go to `chrome://extensions/`
+2. Find "Carespace Bug Reporter"
+3. Click "Details"
+4. Scroll to "Allow in incognito"
+5. Toggle ON
+
+**Note:** In incognito mode, you'll need to log in to the Carespace subdomain in the incognito window before you can report bugs.
+
 ## Quick Start
 
 ### For Production Use (Recommended)

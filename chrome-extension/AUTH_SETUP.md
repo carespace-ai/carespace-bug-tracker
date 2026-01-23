@@ -2,20 +2,62 @@
 
 The Carespace Bug Reporter extension requires users to be authenticated on `*.carespace.ai` domains before they can submit bug reports.
 
+## ⚠️ Important: Subdomain-Specific Authentication
+
+The extension checks if the user is authenticated **on the current subdomain specifically**, not just any carespace.ai subdomain.
+
+**Example:**
+- ✅ Logged in to `moi.carespace.ai` → Can report bugs on `moi.carespace.ai`
+- ❌ Logged in to `app.carespace.ai` only → Cannot report bugs on `moi.carespace.ai`
+- ❌ Logged in to `dashboard.carespace.ai` only → Cannot report bugs on `moi.carespace.ai`
+
+**Why?** This ensures bug reports are tied to the specific subdomain/application where the user is authenticated, preventing cross-subdomain issues and maintaining proper audit trails.
+
 ## How It Works
 
 1. **Content Script** (`content.js`) runs on carespace.ai pages
-2. Checks for authentication indicators (cookies, localStorage, sessionStorage)
-3. Sends auth status to the extension
-4. **Popup** (`popup.js`) checks auth before showing the form
-5. If not authenticated, shows login prompt
-6. Auth token is included in bug submission
+2. Makes API call to current subdomain to verify authentication
+3. Checks for subdomain-specific auth indicators
+4. Sends auth status to the extension
+5. **Popup** (`popup.js`) checks auth before showing the form
+6. If not authenticated on current subdomain, shows login prompt
+7. Auth token is included in bug submission
+
+## Recommended: API-Based Auth Check (Default)
+
+The extension now uses **API calls to verify authentication on the current subdomain**. This is the most reliable method.
+
+**How it works:**
+1. Extension makes GET request to `/api/auth/me` (or your auth endpoint)
+2. Includes cookies with `credentials: 'include'`
+3. If response is OK (200), user is authenticated on this subdomain
+4. If response is 401/403, user is not authenticated
+
+**Customize the endpoint** in `content.js` line ~20:
+```javascript
+const response = await fetch('/api/auth/me', {
+  method: 'GET',
+  credentials: 'include',
+  headers: { 'Accept': 'application/json' }
+});
+```
+
+**Common auth endpoints:**
+- `/api/auth/me`
+- `/api/user/profile`
+- `/api/auth/verify`
+- `/api/user/current`
+
+**Your API should return:**
+- `200 OK` if authenticated on this subdomain
+- `401 Unauthorized` if not authenticated
+- Optional: User data in JSON format
 
 ## Customizing for Your Auth System
 
 The extension checks for common authentication patterns out of the box, but you should customize it to match your specific authentication system.
 
-### Edit `content.js` - Line 15-50
+### Edit `content.js` - Line 15-120
 
 ```javascript
 function checkAuthentication() {
@@ -342,6 +384,44 @@ function checkAuthentication() {
 }
 ```
 
+## Incognito Mode / Private Browsing
+
+The extension works in incognito mode, but requires manual enablement:
+
+### Enable in Chrome
+
+1. Go to `chrome://extensions/`
+2. Find "Carespace Bug Reporter"
+3. Click "Details"
+4. Enable "Allow in incognito"
+
+### How Auth Works in Incognito
+
+- Incognito mode has **separate cookies and storage** from normal browsing
+- Users must log in to Carespace **in the incognito window**
+- Auth checks work the same way (API call to verify session)
+- Once logged in (in incognito), bug reporting works normally
+
+### Manifest Configuration
+
+```json
+"incognito": "split"
+```
+
+This means the extension runs in "split" mode where incognito and normal sessions are completely separate, which is secure and expected behavior.
+
+## Subdomain-Specific Authentication
+
+Remember: Authentication is checked **per subdomain**.
+
+| Logged in to | Can report bugs on | Reason |
+|--------------|-------------------|---------|
+| `app.carespace.ai` | `app.carespace.ai` ✅ | Same subdomain |
+| `app.carespace.ai` | `moi.carespace.ai` ❌ | Different subdomain |
+| `moi.carespace.ai` | `moi.carespace.ai` ✅ | Same subdomain |
+
+This prevents confusion and ensures proper audit trails tied to specific applications.
+
 ## Need Help?
 
 If you're having trouble configuring authentication:
@@ -351,3 +431,4 @@ If you're having trouble configuring authentication:
 3. Update `content.js` to match your auth pattern
 4. Test with console.log to verify auth detection
 5. Rebuild extension: `./build.sh`
+6. Test on the actual subdomain where users will be authenticated
