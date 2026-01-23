@@ -21,6 +21,29 @@ A Chrome extension that integrates with the Carespace Bug Tracker to allow users
 
 This restriction ensures bug reports are only submitted from official Carespace applications.
 
+## Authentication Required
+
+**Security:** Users must be logged in to Carespace to submit bug reports.
+
+- 🔒 **Authenticated users only** - Prevents anonymous/spam reports
+- ✅ **Auto-detected** - Extension checks for auth cookies/tokens
+- 👤 **User info included** - Email pre-filled from logged-in account
+- 🔐 **Token included** - Auth token sent with bug report for validation
+
+### How It Works
+
+1. User clicks extension icon on carespace.ai
+2. Extension checks if user is logged in
+3. **If authenticated:** Shows bug report form
+4. **If not authenticated:** Shows login prompt with retry button
+5. Auth token included in bug submission
+
+### Configuration
+
+The extension checks for common auth patterns (cookies, localStorage, JWT). To customize for your specific auth system, see **[AUTH_SETUP.md](./AUTH_SETUP.md)** for detailed configuration guide.
+
+**Quick config** - Edit `content.js` lines 15-50 to match your authentication system.
+
 ## Quick Start
 
 ### For Production Use (Recommended)

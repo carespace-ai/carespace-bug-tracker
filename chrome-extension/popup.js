@@ -8,6 +8,9 @@ function isCarespaceAiDomain(url) {
   }
 }
 
+// Store auth status globally
+let authStatus = null;
+
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
   // Get current tab to check domain
@@ -33,6 +36,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     `;
     resultDiv.classList.remove('hidden');
     return;
+  }
+
+  // Check authentication status
+  try {
+    const response = await chrome.tabs.sendMessage(tab.id, { type: 'checkAuth' });
+    authStatus = response;
+
+    if (!response.authenticated) {
+      // Not authenticated - show login prompt
+      document.getElementById('bugForm').style.display = 'none';
+      const resultDiv = document.getElementById('result');
+      resultDiv.className = 'error';
+      resultDiv.innerHTML = `
+        <strong>🔒 Authentication Required</strong>
+        <div style="margin-top: 8px;">
+          You must be logged in to Carespace to report bugs.
+        </div>
+        <div style="margin-top: 12px;">
+          Please <a href="https://app.carespace.ai/login" target="_blank" style="color: #9f30ed; text-decoration: underline;">log in to Carespace</a> and try again.
+        </div>
+        <div style="margin-top: 12px;">
+          <button id="retryAuth" style="padding: 8px 16px; background: #9f30ed; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Retry After Login
+          </button>
+        </div>
+      `;
+      resultDiv.classList.remove('hidden');
+
+      // Add retry button listener
+      document.getElementById('retryAuth').addEventListener('click', () => {
+        window.location.reload();
+      });
+
+      return;
+    }
+
+    // Pre-fill email if available
+    if (response.userInfo && response.userInfo.email) {
+      const emailField = document.getElementById('userEmail');
+      emailField.value = response.userInfo.email;
+      emailField.disabled = true; // Disable editing since it's from auth
+    }
+  } catch (error) {
+    console.warn('[Carespace Bug Reporter] Could not check auth status:', error);
+    // If content script not loaded yet, allow submission but warn
+    console.log('[Carespace Bug Reporter] Proceeding without auth check');
   }
 
   // Check if popup was opened via context menu
@@ -86,6 +135,16 @@ document.getElementById('bugForm').addEventListener('submit', async (e) => {
     // Add environment context
     const environment = `Extension - ${tab.url}`;
     formData.append('environment', environment);
+
+    // Add authentication token if available
+    if (authStatus && authStatus.token) {
+      formData.append('authToken', authStatus.token);
+    }
+
+    // Add user ID if available
+    if (authStatus && authStatus.userInfo && authStatus.userInfo.userId) {
+      formData.append('userId', authStatus.userInfo.userId);
+    }
 
     // Capture screenshot if enabled
     const shouldCaptureScreenshot = document.getElementById('captureScreenshot').checked;

@@ -86,9 +86,25 @@ chrome.action.onClicked.addListener((tab) => {
   // Popup will open automatically - no action needed here
 });
 
-// Listen for messages from popup or content scripts (future use)
+// Listen for messages from popup or content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('Message received:', message);
+
+  if (message.type === 'authStatus') {
+    // Store auth status from content script
+    console.log('Auth status received:', message.authenticated ? 'Authenticated' : 'Not authenticated');
+    chrome.storage.local.set({
+      authStatus: {
+        authenticated: message.authenticated,
+        token: message.token,
+        userInfo: message.userInfo,
+        domain: message.domain,
+        timestamp: Date.now()
+      }
+    });
+    sendResponse({ success: true });
+    return true;
+  }
 
   if (message.type === 'getBugContext') {
     // Return any stored context
