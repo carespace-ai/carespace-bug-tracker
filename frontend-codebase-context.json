@@ -1,0 +1,809 @@
+{
+  "_instructions": {
+    "purpose": "Provides AI context about carespace-ui frontend codebase for accurate bug analysis",
+    "howToUse": "This file is automatically included in AI prompts when analyzing frontend bugs",
+    "maintenance": "Update when architecture changes, new features added, or patterns discovered",
+    "lastUpdated": "2026-01-23",
+    "version": "2.0.0"
+  },
+  "frontend": {
+    "name": "carespace-ui",
+    "version": "2.0.0",
+    "description": "Healthcare web application for AI-assisted physical therapy assessments including pose estimation, ROM analysis, posture evaluation, and patient management",
+    "repository": {
+      "type": "git",
+      "url": "carespace-ui",
+      "branch": "master",
+      "workingDirectory": "/Users/fusuma/dev/carespace/carespace-ui"
+    },
+    "techStack": {
+      "framework": "React 18.3.1 with TypeScript 5.4.5",
+      "buildTool": "CRACO (Create React App Configuration Override) with ESBuild",
+      "bundler": "Webpack 5 with optimization plugins",
+      "uiLibrary": "Ant Design 5.27.5 (antd)",
+      "styling": [
+        "Styled Components 6.x (CSS-in-JS)",
+        "Tailwind CSS (utility-first)",
+        "CSS Custom Properties (design system tokens)",
+        "PostCSS with nesting support"
+      ],
+      "stateManagement": {
+        "primary": "Redux Toolkit 1.9.7 with RTK Query",
+        "middleware": "Custom state sync middleware",
+        "devTools": "Redux DevTools enabled",
+        "pattern": "Feature-based slice organization"
+      },
+      "routing": "React Router DOM 6.23.1 with role-based routing",
+      "authentication": "react-auth-kit 3.1.3 with JWT token management",
+      "i18n": "i18next 23.11.5 with react-i18next 14.1.2",
+      "mlAi": {
+        "frameworks": [
+          "TensorFlow.js 4.22.0 (pose detection)",
+          "MediaPipe Holistic 0.5.x (pose estimation)",
+          "MediaPipe Tasks Vision 0.10.20"
+        ],
+        "models": [
+          "@tensorflow-models/pose-detection 2.1.3",
+          "@tensorflow-models/handpose 0.1.0",
+          "@tensorflow-models/knn-classifier 1.2.6"
+        ],
+        "backends": [
+          "@tensorflow/tfjs-backend-wasm 4.22.0",
+          "@tensorflow/tfjs-backend-cpu 4.22.0"
+        ]
+      },
+      "testing": {
+        "e2e": "Playwright 1.56.0 with accessibility testing (@axe-core/playwright)",
+        "unit": "Jest with React Testing Library",
+        "visual": "Storybook 9.x for component development",
+        "accessibility": "@axe-core/react 4.10.2 for runtime checks",
+        "performance": "Lighthouse CI with custom metrics"
+      },
+      "observability": {
+        "tracing": "OpenTelemetry auto-instrumentations-web 0.39.0",
+        "exporter": "@opentelemetry/exporter-trace-otlp-http",
+        "instrumentation": "Fetch API instrumentation"
+      },
+      "featureFlags": "Unleash proxy client 5.0.1 (@unleash/proxy-client-react)",
+      "http": "Axios 1.7.2 with custom interceptors",
+      "cms": "Strapi headless CMS integration",
+      "animations": [
+        "Framer Motion 12.x",
+        "Lottie React 2.4.0",
+        "Canvas Confetti 1.9.3"
+      ],
+      "utilities": [
+        "date-fns 2.30.0 (primary date library)",
+        "dayjs 1.11.18 (legacy, being phased out)",
+        "lodash 4.17.21",
+        "uuid 13.0.0",
+        "fuse.js 7.1.0 (fuzzy search)",
+        "validator 13.12.0"
+      ]
+    },
+    "architecture": {
+      "pattern": "Atomic Design with feature-based Redux organization",
+      "componentHierarchy": [
+        "Atoms → Basic UI (buttons, inputs, badges, modals)",
+        "Molecules → Composite components from atoms",
+        "Organisms → Complex feature components",
+        "Templates → Page-level layouts (sparse usage)",
+        "Pages → Route-mapped application views"
+      ],
+      "keyDirectories": [
+        "src/components/atoms/ - 70+ basic UI components (Logo, Modal, Badge, Loading, CommandPalette, Icon system)",
+        "src/components/molecules/ - 50+ composite components (FormComponents, WeeklyCalendar, VideoRecorder)",
+        "src/components/organisms/ - 30+ complex features (pose estimation, ROM flow, posture analysis, dashboards)",
+        "src/components/pages/ - 60+ route-mapped views (PatientDashboard, AdminUnassignedPatients, PostureScan, Rom)",
+        "src/components/templates/ - Page layouts (AppLayout with role-based navigation)",
+        "src/components/layouts/ - Layout wrappers (AdminLayout, AppLayout with navigation system)",
+        "src/stores/ - Redux store with feature-based slices (clinical/, patients/, posture/, activity/, content/)",
+        "src/routers/ - Multi-role routing (Admin.tsx, Patient.tsx, SuperAdmin.tsx, Private.tsx, Public.tsx, SDK.tsx)",
+        "src/services/ - Service layer (API clients, WebSocket services, EventEmitter)",
+        "src/utils/ - Utility functions (Api.ts with axios interceptors, navigation, form validation, mediapipe)",
+        "src/hooks/ - Custom React hooks (useTypedTranslation, useTypedSelector, useTypedDispatch)",
+        "src/contexts/ - React contexts (theme, auth, feature flags)",
+        "src/config/ - Configuration files (navigation/, tours/, emptyStates/, commands/)",
+        "src/constants/ - Constants and enums (authConstants, route constants)",
+        "src/providers/ - Context providers (ThemeProvider, AuthProvider, FeatureFlagProvider)",
+        "src/styles/ - Styling system (design-system.css, tokens/primitives.css, antd-theme.ts)",
+        "src/locales/ - Translation files (en.json with 1,728+ keys, archive/ for cleanup)",
+        "src/icons/ - Carespace custom icons (Linear icon style for brand-specific needs)",
+        "src/@types/ - TypeScript type definitions (i18next.d.ts, global types)",
+        "src/sdk/ - SDK integration code",
+        "src/demo/ - Demo data and providers",
+        "e2e/ - Playwright E2E test suites (accessibility/, navigation/, responsive/, performance/)",
+        "scripts/ - Build and utility scripts (i18n-cli, migration tools, analysis scripts)",
+        "docs/ - Documentation (implementation-reports/, debug-reports/, guides/)",
+        "tailwind/ - Tailwind configuration (tailwind.config.js with design system tokens)",
+        ".eslint/ - Custom ESLint plugins (eslint-plugin-carespace for token enforcement)"
+      ]
+    },
+    "pathAliases": {
+      "purpose": "TypeScript path aliases for cleaner imports (configured in tsconfig.json and craco.config.js)",
+      "aliases": {
+        "@atoms/*": "src/components/atoms/*",
+        "@molecules/*": "src/components/molecules/*",
+        "@organisms/*": "src/components/organisms/*",
+        "@templates/*": "src/components/templates/*",
+        "@pages/*": "src/components/pages/*",
+        "@stores/*": "src/stores/*",
+        "@services/*": "src/services/*",
+        "@hooks/*": "src/hooks/*",
+        "@contexts/*": "src/contexts/*",
+        "@utils/*": "src/utils/*",
+        "@routers/*": "src/routers/*",
+        "@constants/*": "src/constants/*",
+        "@config/*": "src/config/*",
+        "@providers/*": "src/providers/*",
+        "@styles/*": "src/styles/*",
+        "@components/*": "src/components/*",
+        "@types/*": "src/types/*",
+        "@sdk/*": "src/sdk/*",
+        "@strapi": "src/Strapi.ts",
+        "@carespace-icons/*": "src/icons/*"
+      },
+      "importRule": "ALWAYS use path aliases, NEVER use relative paths like ../../components"
+    },
+    "stateManagement": {
+      "architecture": "Redux Toolkit with feature-based slice organization",
+      "storeLocation": "src/stores/index.ts",
+      "sliceCategories": {
+        "clinical": [
+          "rom - Range of Motion assessments",
+          "rehab - Rehabilitation programs",
+          "performance - Performance metrics",
+          "painAssessment - Pain evaluation",
+          "functionalGoals - Treatment goals"
+        ],
+        "coachingTools": [
+          "coachRom - Coaching ROM tools",
+          "coachRehab - Coaching rehab tools",
+          "coachPerformance - Coaching performance tools"
+        ],
+        "patientManagement": [
+          "adminDashboardPatient - Admin patient overview",
+          "newPatients - New patient triage",
+          "reviewed - Reviewed patients",
+          "pendingReview - Pending review queue",
+          "outOfParams - Out of parameters patients",
+          "escalationRequired - Escalation queue",
+          "followUpRequired - Follow-up queue"
+        ],
+        "posture": [
+          "PostureAnalysis - Core posture analysis",
+          "postures - Posture data storage",
+          "postureAnalytics - Analytics dashboard",
+          "postureAnalyticsAdminDashboard - Admin analytics",
+          "postureAnalyticsSelectedSession - Session selection",
+          "bulkOperations - Bulk posture operations",
+          "clinicalOutcomes - Clinical outcomes tracking",
+          "consultation - Consultation management",
+          "exerciseTracking - Exercise tracking",
+          "organizationalMetrics - Org-level metrics"
+        ],
+        "activity": [
+          "activityStream - Activity feed",
+          "contacts - Contact management"
+        ],
+        "shared": [
+          "user - Current user state",
+          "userManagement - User CRUD operations",
+          "patientDetail - Patient detail views",
+          "adminManagement - Admin operations",
+          "consentForms - Consent form management",
+          "onBoard - Onboarding flows"
+        ],
+        "content": [
+          "reports - Report generation and storage",
+          "myLibrary - Content library",
+          "survey - Survey management"
+        ],
+        "settings": [
+          "settings - User settings",
+          "dashboardPreferences - Dashboard customization"
+        ],
+        "scan": [
+          "scan - Scan operations"
+        ],
+        "dashboard": [
+          "dashboard - Dashboard state"
+        ],
+        "sdk": [
+          "sdkAPIKeys - SDK API key management"
+        ]
+      },
+      "rtkQuery": {
+        "apis": [
+          "recommendationsApi - Recommendation endpoints",
+          "rehabApi - Rehab program endpoints",
+          "romApi - ROM assessment endpoints",
+          "reportsApi - Report generation endpoints",
+          "surveyApi - Survey endpoints",
+          "programsApi - Program management endpoints",
+          "settingsApi - Settings endpoints",
+          "userManagementApi - User management endpoints",
+          "preferenceApi - User preferences endpoints"
+        ],
+        "caching": "Automatic caching with tag-based invalidation",
+        "optimisticUpdates": "Enabled for critical mutations"
+      },
+      "middleware": [
+        "stateSyncMiddleware - Syncs state to localStorage (src/stores/settings/middleware/stateSyncMiddleware.ts)"
+      ],
+      "typedHooks": {
+        "useTypedSelector": "Typed version of useSelector from src/stores/index.ts",
+        "useTypedDispatch": "Typed version of useDispatch from src/stores/index.ts",
+        "rule": "ALWAYS use typed hooks, NEVER use raw useSelector/useDispatch"
+      },
+      "asyncPatterns": "Create async thunks with createAsyncThunk for API calls in slice files"
+    },
+    "routing": {
+      "architecture": "Multi-role routing with react-router-dom 6.23.1",
+      "routerFiles": [
+        "src/routers/Private.tsx - Authenticated route wrapper with react-auth-kit",
+        "src/routers/Admin.tsx - Admin-specific routes (patient management, reports, analytics)",
+        "src/routers/Patient.tsx - Patient-facing routes (dashboard, assessments, programs)",
+        "src/routers/SuperAdmin.tsx - Super admin routes (SDK keys, org reporting)",
+        "src/routers/Public.tsx - Unauthenticated routes (login, signup)",
+        "src/routers/SDK.tsx - SDK-specific routes",
+        "src/routers/index.tsx - Root router with role-based navigation"
+      ],
+      "routeConstants": {
+        "location": "src/routers/routers.ts",
+        "rule": "ALWAYS import route constants from @routers/routers, NEVER hardcode paths",
+        "examples": [
+          "router.USERPATIENTVIEW - /:userId/dashboard",
+          "router.ALLPATIENTS - /admin/patients",
+          "router.SETTINGS - /settings",
+          "router.POSTURE_ANALYTICS_SCAN - /:userId/rom/posture-analytics/scan"
+        ]
+      },
+      "navigation": {
+        "modernSystem": "AppLayoutWrapper with type-safe, role-based navigation (October 2025)",
+        "configs": [
+          "src/config/navigation/admin.tsx - Admin navigation with badge integration",
+          "src/config/navigation/superAdmin.tsx - Super Admin navigation",
+          "src/config/navigation/user.tsx - Patient/User navigation"
+        ],
+        "badgeIntegration": "useNavigationWithBadges hook dynamically shows badge counts from Redux state",
+        "deprecatedSystem": "AdminMenuSideBar (moved to src/components/atoms/AdminMenu/deprecated/)"
+      },
+      "commandPalette": {
+        "component": "src/components/atoms/CommandPalette/CommandPalette.tsx",
+        "trigger": "Cmd+K (Mac) / Ctrl+K (Windows/Linux)",
+        "modes": [
+          "idle - Preset navigation commands (role-specific)",
+          "userSearch - Search for users by name (admins only)",
+          "userContext - User-specific actions and navigation",
+          "drawerExpanded - Extended UI for complex actions",
+          "programContext - Program-specific navigation with grouped routes"
+        ],
+        "features": [
+          "Role-based initialization",
+          "Keyboard-first navigation (arrow keys, enter, esc)",
+          "Recent users tracking (localStorage, max 5)",
+          "Fuzzy search matching",
+          "Auto-search trigger for admins"
+        ]
+      }
+    },
+    "styling": {
+      "architecture": "Hybrid design system with CSS custom properties + Tailwind CSS",
+      "designSystem": {
+        "primary": "CSS Custom Properties (semantic tokens)",
+        "location": "src/styles/design-system.css (loaded first)",
+        "primitives": "src/styles/tokens/primitives.css",
+        "antdTheme": "src/styles/antd-theme.ts (generated from CSS vars)",
+        "darkMode": "Supported via ThemeProvider (@providers/ThemeProvider)"
+      },
+      "tailwind": {
+        "config": "tailwind/tailwind.config.js",
+        "usage": "Secondary styling method, prefer utilities over custom CSS",
+        "migration": "Transitioning from legacy tokens to design system"
+      },
+      "loadOrder": [
+        "1. Design System CSS (@styles/design-system.css)",
+        "2. Ant Design theme (via ConfigProvider)",
+        "3. App-specific overrides (Changes.css)"
+      ],
+      "rules": [
+        "Use CSS custom properties from design system for colors/spacing",
+        "Prefer Tailwind utilities over custom CSS classes",
+        "Theme-aware components: Use useTheme() hook for dark mode",
+        "Responsive design: Use Ant Design breakpoints and Tailwind responsive prefixes"
+      ],
+      "tokenEnforcement": {
+        "linter": "Custom ESLint plugin (eslint-plugin-carespace)",
+        "rules": [
+          "carespace/no-hardcoded-colors - Enforce design system color tokens",
+          "carespace/no-hardcoded-spacing - Enforce spacing tokens",
+          "carespace/no-hardcoded-typography - Enforce typography tokens"
+        ],
+        "scripts": [
+          "npm run lint:tokens - Check token violations",
+          "npm run lint:tokens:fix - Auto-fix token violations",
+          "npm run migrate-tokens - Migrate hardcoded values to tokens"
+        ]
+      }
+    },
+    "iconSystem": {
+      "modernSystem": "Unified icon system powered by Untitled UI icons (November 2025)",
+      "component": "src/components/atoms/Icon/UntitledIcon.tsx",
+      "registry": "src/components/atoms/Icon/iconRegistry.ts",
+      "types": "src/components/atoms/Icon/types.ts",
+      "features": [
+        "Type-safe icon names with autocomplete",
+        "Consistent sizing (xsmall=12px, small=16px, medium=20px, large=24px, xlarge=40px)",
+        "Theme-aware colors via CSS custom properties",
+        "Full accessibility support (aria-label, aria-hidden)",
+        "Keyboard and click handlers"
+      ],
+      "usage": "import { UntitledIcon } from '@atoms/Icon'; <UntitledIcon name=\"search\" size=\"medium\" />",
+      "categories": [
+        "Navigation: chevronLeft, chevronRight, arrowLeft, arrowRight, home",
+        "Actions: plus, edit, trash, search, filter, download, upload",
+        "Status: checkCircle, alertCircle, alertTriangle, xCircle",
+        "Form: user, mail, lock, eye, eyeOff, calendar",
+        "Media: camera, video, playCircle, pauseCircle, expand"
+      ],
+      "preservedIcons": [
+        "Carespace Custom Icons (Linear style) - Brand-specific needs",
+        "Medical Icons (pain scale faces) - Require clinical validation before changes",
+        "Ant Design Components (Badge, Tag, Spin) - Functional components, not icons"
+      ],
+      "migrationStatus": "108 icons migrated across 31 files (October 2025)",
+      "rule": "ALWAYS import from @atoms/Icon, NEVER import from icon libraries directly"
+    },
+    "i18n": {
+      "framework": "i18next 23.11.5 with react-i18next 14.1.2",
+      "hook": "useTypedTranslation from @hooks/useTypedTranslation (recommended)",
+      "files": [
+        "src/locales/en.json - Source of truth (1,728+ usages, 113 lines)",
+        "src/i18n.ts - i18next configuration with Strapi integration",
+        "src/@types/i18next.d.ts - TypeScript type definitions"
+      ],
+      "features": [
+        "Development-only runtime validation (warns about missing keys)",
+        "Zero production overhead (validation code stripped)",
+        "Backward compatible with existing useTranslation",
+        "Static en.json bundled, Strapi loads async with fallback"
+      ],
+      "keyStructure": "Nested keys (Admin.data.menu.home.home) - will flatten in future (S4)",
+      "cli": {
+        "scripts": [
+          "npm run i18n:add - Add new translation keys interactively",
+          "npm run i18n:unused - Find unused translation keys",
+          "npm run i18n:extract - Find hardcoded strings that should be translated",
+          "npm run i18n:validate - Validate translation consistency",
+          "npm run i18n:cleanup - Preview unused keys cleanup (dry-run, safe by default)",
+          "npm run i18n:cleanup:confirm - Apply cleanup with confirmation",
+          "npm run i18n:coverage - Check translation coverage"
+        ]
+      },
+      "cleanup": {
+        "features": [
+          "Safe by default: Dry-run mode (no file changes)",
+          "Threshold-based: Only removes keys unused >30 days (configurable)",
+          "Archive before delete: Keys archived to src/locales/archive/ (90-day retention)",
+          "Manual approval: Requires explicit --confirm flag + user confirmation",
+          "Weekly automation: GitHub Actions workflow (dry-run only, creates issues)"
+        ],
+        "documentation": "docs/i18n-cleanup-guide.md"
+      },
+      "rule": "ALWAYS use hooks (useTypedTranslation), NEVER import i18n instance directly"
+    },
+    "api": {
+      "backend": {
+        "baseURL": "process.env.REACT_APP_ADMIN_HOST",
+        "client": "axios 1.7.2",
+        "config": "src/utils/Api.ts",
+        "interceptors": [
+          "Request: Adds Authorization header (Bearer token from localStorage)",
+          "Response: Handles 401 errors with token refresh via EventEmitter",
+          "Error: Gracefully handles SSL certificate errors in development"
+        ]
+      },
+      "strapi": {
+        "client": "axios instance configured in src/Strapi.ts",
+        "baseURL": "process.env.REACT_APP_STRAPI_HOST",
+        "authentication": "Bearer token from process.env.REACT_APP_STRAPI_KEY",
+        "errorHandling": "Intercepts SSL certificate errors and API errors"
+      },
+      "patterns": [
+        "Use Strapi client (@strapi) for CMS content",
+        "Configure axios in @utils/Api with auth interceptors",
+        "Handle loading/error states in Redux slices",
+        "Use RTK Query for data fetching with automatic caching"
+      ]
+    },
+    "commonPatterns": [
+      "Component Development:",
+      "- ALWAYS create Storybook stories for new atoms/molecules",
+      "- Use TypeScript interfaces for all component props",
+      "- Prefer function components with hooks over class components",
+      "- Export from index.tsx in component folders",
+      "- Use path aliases (@atoms/, @molecules/, etc.) - never relative paths",
+      "",
+      "State Management:",
+      "- Use typed Redux hooks: useTypedSelector, useTypedDispatch",
+      "- Create async thunks for API calls in slice files",
+      "- Normalize state shape - avoid deeply nested objects",
+      "- Use Redux Toolkit's createSlice for all new slices",
+      "",
+      "Routing:",
+      "- Import route constants from @routers/routers - never hardcode paths",
+      "- Use Private wrapper for authenticated routes",
+      "- Pass userId in route params where needed (:userId pattern)",
+      "",
+      "Styling:",
+      "- Use CSS custom properties from design system for colors/spacing",
+      "- Prefer Tailwind utilities over custom CSS classes",
+      "- Theme-aware components: Use useTheme() hook for dark mode",
+      "- Responsive design: Use Ant Design breakpoints and Tailwind responsive prefixes",
+      "",
+      "API Integration:",
+      "- Use Strapi client (@strapi) for CMS content",
+      "- Configure axios in @utils/Api with auth interceptors",
+      "- Handle loading/error states in Redux slices",
+      "- Use RTK Query for data fetching with automatic caching",
+      "",
+      "Translations:",
+      "- ALWAYS use hooks (useTypedTranslation) - never import i18n instance directly",
+      "- Nested keys: Admin.data.menu.home.home (current structure)",
+      "- Runtime fallback: Static en.json bundled, Strapi loads async with fallback",
+      "",
+      "Icons:",
+      "- ALWAYS import from @atoms/Icon - never import from icon libraries directly",
+      "- Use type-safe icon names with autocomplete",
+      "- Follow size standards (xsmall=12px, small=16px, medium=20px, large=24px)",
+      "- Use CSS custom properties for theme-aware colors",
+      "- Include aria-label for icon-only buttons",
+      "",
+      "Build Configuration:",
+      "- CRACO plugins: ESBuild (transpilation), Alias (path resolution)",
+      "- Webpack copies: MediaPipe assets, TensorFlow WASM files to public/",
+      "- Dev server headers: CORS policies for MediaPipe (Cross-Origin-Opener-Policy, Cross-Origin-Embedder-Policy)",
+      "- Memory allocation: Build requires --max_old_space_size=8192",
+      "",
+      "Testing:",
+      "- E2E tests: Use page object model pattern (fixtures in e2e/fixtures/)",
+      "- Authentication: Setup project in e2e/auth.setup.ts creates storage state",
+      "- Test organization: Phase-based naming (phase6-accessibility.spec.ts)",
+      "- Accessibility: Use @axe-core/playwright for a11y testing",
+      "",
+      "Security:",
+      "- Avoid command injection, XSS, SQL injection, OWASP top 10 vulnerabilities",
+      "- Validate user input at boundaries (user input, external APIs)",
+      "- Never commit sensitive files (.env, credentials.json)",
+      "- Use JWT tokens stored in localStorage with automatic refresh"
+    ],
+    "knownIssues": [
+      "Camera/Pose Estimation:",
+      "- Black screen on camera initialization: Check MediaPipe asset loading in public/ directory",
+      "- Persistent camera black screen: Verify CORS headers in craco.config.js (Cross-Origin-Opener-Policy, Cross-Origin-Embedder-Policy)",
+      "- Camera permissions: Check CameraPermissionSplash component in src/components/molecules/CameraPermissionSplash/",
+      "- Pose detection failures: Verify TensorFlow WASM files copied to public/ by webpack",
+      "",
+      "Command Palette:",
+      "- User auto-open issue: Check CommandPalette state machine in src/components/atoms/CommandPalette/reducer.ts",
+      "- Search not triggering: Verify fuzzy search implementation in CommandPalette.tsx",
+      "- Console.logs in production: Phase 1 cleanup complete (October 2025)",
+      "",
+      "React Refresh:",
+      "- Worker injection errors: Documented in docs/debug-reports/2026-01-09-react-refresh-worker-injection.md",
+      "- Solution: Check webpack configuration in craco.config.js",
+      "",
+      "Super Admin Search:",
+      "- Patient search failures: Check userManagement slice and search API endpoint",
+      "- Investigation: docs/debug-reports/super-admin-search-investigation.md",
+      "",
+      "ROM API Calls:",
+      "- API call flow issues: Documented in docs/debug-reports/omnirom-api-calls-flow-diagram.md",
+      "- Check ROM slice in src/stores/clinical/rom/ and romApi",
+      "",
+      "Translation Issues:",
+      "- Missing keys: Use npm run i18n:validate to check consistency",
+      "- Hardcoded strings: Use npm run i18n:extract to find untranslated text",
+      "- Unused keys: Use npm run i18n:cleanup (dry-run) to preview cleanup",
+      "",
+      "Build/Memory:",
+      "- Out of memory during build: Increase --max_old_space_size in NODE_OPTIONS (currently 8192)",
+      "- Webpack bundle size: Use npm run analyze:bundle to generate report",
+      "",
+      "SSL Certificate:",
+      "- Development SSL errors: Expected in local development, gracefully handled by interceptors",
+      "- Check src/utils/Api.ts and src/Strapi.ts for SSL error handling",
+      "",
+      "Performance:",
+      "- Large bundle size: Run npm run analyze:bundle and optimize imports",
+      "- Slow initial load: Check lazy loading and code splitting in routers",
+      "- Redux state size: Use Redux DevTools to inspect state and normalize if needed"
+    ],
+    "integrations": [
+      "Backend API:",
+      "- Base URL: process.env.REACT_APP_ADMIN_HOST",
+      "- Authentication: JWT Bearer tokens with automatic refresh via EventEmitter",
+      "- Client: axios 1.7.2 with custom interceptors (src/utils/Api.ts)",
+      "",
+      "Strapi CMS:",
+      "- Base URL: process.env.REACT_APP_STRAPI_HOST",
+      "- Authentication: Bearer token from process.env.REACT_APP_STRAPI_KEY",
+      "- Client: axios instance in src/Strapi.ts",
+      "- Usage: Content management, translation loading",
+      "",
+      "Feature Flags:",
+      "- Service: Unleash proxy client (@unleash/proxy-client-react 5.0.1)",
+      "- Integration: FeatureFlagProvider in src/providers/",
+      "- Usage: Feature toggles, A/B testing, gradual rollouts",
+      "",
+      "Observability:",
+      "- Tracing: OpenTelemetry auto-instrumentations-web 0.39.0",
+      "- Exporter: OTLP HTTP exporter to backend",
+      "- Instrumentation: Automatic fetch API tracing, custom spans",
+      "",
+      "AI/ML Services:",
+      "- TensorFlow.js: Pose detection models",
+      "- MediaPipe: Holistic pose estimation (camera_utils, drawing_utils, holistic, pose, tasks-vision)",
+      "- WASM backend: Optimized inference in browser",
+      "",
+      "Analytics:",
+      "- Web Vitals: Performance monitoring (web-vitals 5.1.0)",
+      "- Lighthouse CI: Performance audits (@lhci/cli 0.15.1)",
+      "- Custom metrics: Dashboard performance tracking",
+      "",
+      "Voice Assistant:",
+      "- ElevenLabs API: process.env.REACT_APP_ELEVEN_LABS_API_KEY",
+      "- Speech Recognition: react-speech-recognition 3.10.0",
+      "- Speech Synthesis: react-speech-kit 3.0.1",
+      "",
+      "File Storage:",
+      "- Image processing: Sharp 0.34.4 for optimization",
+      "- WebP conversion: @squoosh/cli 0.7.1",
+      "- PDF generation: jsPDF 3.0.3 with autotable",
+      "",
+      "Real-time Communication:",
+      "- WebSocket: ConsultationWebSocketService in src/services/",
+      "- Event System: EventEmitter for pub/sub (src/services/EventEmitter.ts)",
+      "",
+      "UI Enhancements:",
+      "- Drag & Drop: @dnd-kit/core 6.1.0 and @dnd-kit/sortable 8.0.0",
+      "- Charts: Recharts 3.3.0, @ant-design/charts 1.4.3",
+      "- Calendar: react-big-calendar 1.19.4",
+      "- Rich Text: react-quill 2.0.0",
+      "- Markdown: react-markdown 10.1.0 with remark-gfm",
+      "",
+      "Developer Experience:",
+      "- Hot Reload: Fast Refresh with CRACO",
+      "- Type Safety: TypeScript 5.4.5 with strict mode",
+      "- Linting: ESLint with custom plugins (eslint-plugin-carespace)",
+      "- Formatting: Prettier 3.3.0 with pretty-quick",
+      "- Git Hooks: Husky 9.0.11 for pre-commit checks",
+      "- Storybook: Component development and documentation (Storybook 9.x)"
+    ],
+    "environmentVariables": {
+      "required": [
+        "REACT_APP_ADMIN_HOST - Backend API base URL",
+        "REACT_APP_STRAPI_HOST - Strapi CMS base URL",
+        "REACT_APP_STRAPI_KEY - Strapi authentication token"
+      ],
+      "optional": [
+        "REACT_APP_ELEVEN_LABS_API_KEY - Voice assistant API key",
+        "TEST_ENV - Test environment (local, develop, staging)",
+        "AUTH_EMAIL - E2E test credentials",
+        "AUTH_PASSWORD - E2E test credentials",
+        "ANALYZE - Enable webpack bundle analyzer (true/false)",
+        "NODE_ENV - Environment (development, production, test)"
+      ],
+      "example": "See .env.example in project root"
+    },
+    "documentation": {
+      "mainDocs": [
+        "CLAUDE.md - Project overview and development guide (root and .claude/)",
+        "README.md - Getting started and setup instructions",
+        "docs/icon-migration-guide.md - Icon system usage guide",
+        "docs/i18n-cleanup-guide.md - Translation cleanup guide",
+        "docs/sidebar-audit-2025.md - Navigation system architecture",
+        "scripts/README-I18N-CLI.md - i18n CLI usage guide"
+      ],
+      "implementationReports": [
+        "docs/implementation-reports/ - Feature implementation details",
+        "docs/implementation-reports/icon-migration/ - Icon system migration",
+        "docs/implementation-reports/11-sidebar/ - Navigation system migration",
+        "docs/implementation-reports/17-commandPallete/ - Command palette refactoring"
+      ],
+      "debugReports": [
+        "docs/debug-reports/ - Known issues and debugging guides",
+        "docs/debug-reports/persistent-camera-black-screen.md",
+        "docs/debug-reports/command-palette-user-auto-open-issue.md",
+        "docs/debug-reports/super-admin-search-investigation.md"
+      ]
+    },
+    "scripts": {
+      "development": [
+        "npm start - Start dev server with CRACO (port 3000)",
+        "npm run storybook - Start Storybook dev server (port 6006)"
+      ],
+      "build": [
+        "npm run build - Production build (8GB memory allocation)",
+        "npm run serve - Serve production build locally",
+        "npm run build-storybook - Build static Storybook"
+      ],
+      "testing": [
+        "npm test - Run Jest unit tests",
+        "npm run test:e2e - Run all Playwright E2E tests",
+        "npm run test:e2e:ui - E2E tests in UI mode",
+        "npm run test:e2e:debug - Debug E2E tests",
+        "npm run test:e2e:accessibility - Run accessibility tests",
+        "npm run test:a11y - Run a11y audit with axe-core"
+      ],
+      "linting": [
+        "npm run lint - Run ESLint (max warnings: 0)",
+        "npm run lint-fix - Auto-fix ESLint issues",
+        "npm run lint:tokens - Check design system token usage",
+        "npm run lint:tokens:fix - Auto-fix token violations"
+      ],
+      "i18n": [
+        "npm run i18n:add - Add new translation keys",
+        "npm run i18n:unused - Find unused keys",
+        "npm run i18n:extract - Find hardcoded strings",
+        "npm run i18n:validate - Validate translations",
+        "npm run i18n:cleanup - Preview cleanup (dry-run)",
+        "npm run i18n:cleanup:confirm - Apply cleanup"
+      ],
+      "analysis": [
+        "npm run analyze:bundle - Generate bundle size report",
+        "npm run analyze:patterns - Analyze optimization opportunities",
+        "npm run analyze:components - Component usage analysis",
+        "npm run analyze:translations - Translation usage analysis"
+      ],
+      "migration": [
+        "npm run migrate-tokens - Migrate to design system tokens",
+        "npm run migrate:date - Migrate to date-fns from moment",
+        "npm run migrate:components - Migrate to standard components"
+      ]
+    },
+    "fileLocations": {
+      "authentication": [
+        "src/utils/Api.ts - Axios interceptors with JWT token management",
+        "src/routers/Private.tsx - Authenticated route wrapper",
+        "src/constants/authContants.ts - Auth constants (STORAGE_KEY_TOKEN, etc.)"
+      ],
+      "stateManagement": [
+        "src/stores/index.ts - Redux store configuration",
+        "src/stores/clinical/ - Clinical assessment slices",
+        "src/stores/patients/ - Patient management slices",
+        "src/stores/posture/ - Posture analysis slices",
+        "src/stores/settings/middleware/stateSyncMiddleware.ts - State sync middleware"
+      ],
+      "routing": [
+        "src/routers/routers.ts - Route constants (ALWAYS use these)",
+        "src/routers/Admin.tsx - Admin routes",
+        "src/routers/Patient.tsx - Patient routes",
+        "src/routers/SuperAdmin.tsx - Super admin routes",
+        "src/config/navigation/admin.tsx - Admin navigation config",
+        "src/config/navigation/superAdmin.tsx - Super admin navigation config",
+        "src/config/navigation/user.tsx - Patient navigation config"
+      ],
+      "api": [
+        "src/utils/Api.ts - Main axios client with interceptors",
+        "src/Strapi.ts - Strapi CMS client",
+        "src/services/ - Service layer (WebSocket, EventEmitter, mock APIs)"
+      ],
+      "styling": [
+        "src/styles/design-system.css - Design system (loaded first)",
+        "src/styles/tokens/primitives.css - Design system primitives",
+        "src/styles/antd-theme.ts - Ant Design theme config",
+        "tailwind/tailwind.config.js - Tailwind configuration",
+        ".eslint/ - Custom ESLint plugins for token enforcement"
+      ],
+      "icons": [
+        "src/components/atoms/Icon/UntitledIcon.tsx - Main icon component",
+        "src/components/atoms/Icon/iconRegistry.ts - Icon name mappings",
+        "src/components/atoms/Icon/types.ts - TypeScript definitions"
+      ],
+      "i18n": [
+        "src/locales/en.json - Translation source of truth",
+        "src/i18n.ts - i18next configuration",
+        "src/@types/i18next.d.ts - TypeScript types",
+        "src/hooks/useTypedTranslation.ts - Typed translation hook"
+      ],
+      "commandPalette": [
+        "src/components/atoms/CommandPalette/CommandPalette.tsx - Main orchestrator",
+        "src/components/atoms/CommandPalette/reducer.ts - State machine",
+        "src/components/atoms/CommandPalette/types.ts - TypeScript types"
+      ],
+      "mlAi": [
+        "src/utils/mediapipe/ - MediaPipe utilities",
+        "src/poseestimator/ - Pose estimation logic",
+        "src/components/organisms/VideoPoseEstimator/ - Pose estimator component"
+      ]
+    },
+    "bestPractices": [
+      "Component Development:",
+      "- Create Storybook stories for all new atoms/molecules",
+      "- Use TypeScript interfaces for props (never use 'any')",
+      "- Export components from index.tsx in component folders",
+      "- Follow Atomic Design hierarchy strictly",
+      "",
+      "State Management:",
+      "- Use typed Redux hooks exclusively",
+      "- Create async thunks for all API calls",
+      "- Normalize state shape to avoid nesting",
+      "- Use RTK Query for data fetching with caching",
+      "",
+      "Routing:",
+      "- Import route constants from @routers/routers",
+      "- Use Private wrapper for authenticated routes",
+      "- Pass userId in route params (:userId pattern)",
+      "",
+      "Styling:",
+      "- Use design system tokens (CSS custom properties)",
+      "- Prefer Tailwind utilities over custom CSS",
+      "- Theme-aware components with useTheme() hook",
+      "- Responsive design with Ant Design breakpoints",
+      "",
+      "API Integration:",
+      "- Use @strapi for CMS content",
+      "- Configure axios with interceptors in @utils/Api",
+      "- Handle loading/error states in Redux slices",
+      "- Use RTK Query for automatic caching",
+      "",
+      "Translations:",
+      "- Use useTypedTranslation hook exclusively",
+      "- Add new keys via npm run i18n:add",
+      "- Validate with npm run i18n:validate",
+      "- Clean up unused keys quarterly",
+      "",
+      "Icons:",
+      "- Import from @atoms/Icon exclusively",
+      "- Use type-safe icon names",
+      "- Follow size standards (medium=20px default)",
+      "- Include aria-label for icon-only buttons",
+      "",
+      "Testing:",
+      "- Write E2E tests for critical user flows",
+      "- Use page object model pattern",
+      "- Run accessibility audits with @axe-core/playwright",
+      "- Test responsive designs at multiple breakpoints",
+      "",
+      "Security:",
+      "- Avoid OWASP top 10 vulnerabilities",
+      "- Validate at boundaries only",
+      "- Never commit .env or credentials",
+      "- Use JWT with automatic refresh",
+      "",
+      "Performance:",
+      "- Lazy load routes and heavy components",
+      "- Optimize images with WebP conversion",
+      "- Monitor bundle size with npm run analyze:bundle",
+      "- Use memoization for expensive computations"
+    ],
+    "troubleshooting": {
+      "cameraIssues": [
+        "Black screen: Check MediaPipe assets in public/ directory",
+        "Permissions denied: Verify CameraPermissionSplash component",
+        "CORS errors: Check craco.config.js headers (Cross-Origin-Opener-Policy)",
+        "Pose detection fails: Verify TensorFlow WASM files copied to public/"
+      ],
+      "buildIssues": [
+        "Out of memory: Increase NODE_OPTIONS --max_old_space_size",
+        "Bundle too large: Run npm run analyze:bundle",
+        "Dependency conflicts: Clear node_modules and reinstall",
+        "Type errors: Run npm run lint to check TypeScript issues"
+      ],
+      "runtimeIssues": [
+        "401 errors: Check token refresh in src/utils/Api.ts",
+        "Missing translations: Run npm run i18n:validate",
+        "Redux state errors: Use Redux DevTools to inspect state",
+        "Route not found: Check route constants in src/routers/routers.ts"
+      ],
+      "performanceIssues": [
+        "Slow initial load: Check lazy loading in routers",
+        "Large Redux state: Normalize state shape",
+        "Bundle size: Optimize imports and use code splitting",
+        "Memory leaks: Check for unmounted component updates"
+      ]
+    }
+  }
+}

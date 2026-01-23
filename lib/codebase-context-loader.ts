@@ -1,158 +1,168 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-interface CodebaseContext {
-  frontend: CodebaseInfo;
-  backend: CodebaseInfo;
-  sharedContext: SharedContext;
-}
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-interface CodebaseInfo {
-  name: string;
-  description: string;
-  techStack: Record<string, string>;
-  architecture: {
-    pattern: string;
-    keyDirectories: string[];
-  };
-  keyFeatures: string[];
-  commonPatterns: string[];
-  integrations: string[];
-  knownIssues: string[];
-}
-
-interface SharedContext {
-  apiConventions: Record<string, string>;
-  deploymentInfo: Record<string, string>;
-  developmentWorkflow: Record<string, string>;
-}
-
-let cachedContext: CodebaseContext | null = null;
+let cachedFrontend: any = null;
+let cachedBackend: any = null;
 
 /**
- * Load codebase context from configuration file
- * Caches the result for performance
+ * Load codebase context from separate frontend/backend files or combined file
+ * Supports two patterns:
+ * 1. Separate files: frontend-codebase-context.json + backend-codebase-context.json
+ * 2. Combined file: codebase-context.json
  */
-export function loadCodebaseContext(): CodebaseContext {
-  if (cachedContext) {
-    return cachedContext;
-  }
+function loadRepoContext(repo: 'frontend' | 'backend'): any {
+  // Check cache first
+  if (repo === 'frontend' && cachedFrontend) return cachedFrontend;
+  if (repo === 'backend' && cachedBackend) return cachedBackend;
 
   try {
-    const contextPath = join(process.cwd(), 'codebase-context.json');
-    const fileContent = readFileSync(contextPath, 'utf-8');
-    cachedContext = JSON.parse(fileContent) as CodebaseContext;
-    return cachedContext;
+    // Try loading separate file first (preferred)
+    const separateFilePath = join(process.cwd(), `${repo}-codebase-context.json`);
+    try {
+      const content = readFileSync(separateFilePath, 'utf-8');
+      const parsed = JSON.parse(content);
+
+      // Cache and return
+      const context = parsed[repo] || parsed;
+      if (repo === 'frontend') cachedFrontend = context;
+      if (repo === 'backend') cachedBackend = context;
+
+      return context;
+    } catch {
+      // Separate file doesn't exist, try combined file
+      const combinedFilePath = join(process.cwd(), 'codebase-context.json');
+      const content = readFileSync(combinedFilePath, 'utf-8');
+      const parsed = JSON.parse(content);
+
+      const context = parsed[repo];
+      if (repo === 'frontend') cachedFrontend = context;
+      if (repo === 'backend') cachedBackend = context;
+
+      return context;
+    }
   } catch (error) {
-    console.warn('Could not load codebase-context.json, using default empty context');
-
-    // Return empty context if file doesn't exist
-    return {
-      frontend: createEmptyCodebaseInfo('carespace-frontend'),
-      backend: createEmptyCodebaseInfo('carespace-backend'),
-      sharedContext: {
-        apiConventions: {},
-        deploymentInfo: {},
-        developmentWorkflow: {}
-      }
-    };
+    console.warn(`Could not load ${repo} codebase context, using empty context`);
+    return null;
   }
-}
-
-function createEmptyCodebaseInfo(name: string): CodebaseInfo {
-  return {
-    name,
-    description: 'No context provided',
-    techStack: {},
-    architecture: {
-      pattern: 'Not specified',
-      keyDirectories: []
-    },
-    keyFeatures: [],
-    commonPatterns: [],
-    integrations: [],
-    knownIssues: []
-  };
 }
 
 /**
- * Format codebase context for AI prompt
- * @param repo - Which repo context to format ('frontend' or 'backend')
+ * Format any object into a readable string for AI prompts
+ */
+function formatValue(value: any, indent: number = 0): string {
+  const spaces = '  '.repeat(indent);
+
+  if (Array.isArray(value)) {
+    return value.map(item => `${spaces}- ${formatValue(item, 0)}`).join('\n');
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    let result = '';
+    for (const [key, val] of Object.entries(value)) {
+      const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+
+      if (Array.isArray(val)) {
+        result += `\n${spaces}**${formattedKey}:**\n${formatValue(val, indent + 1)}`;
+      } else if (typeof val === 'object' && val !== null) {
+        result += `\n${spaces}**${formattedKey}:**${formatValue(val, indent + 1)}`;
+      } else {
+        result += `\n${spaces}- ${formattedKey}: ${val}`;
+      }
+    }
+    return result;
+  }
+
+  return String(value);
+}
+
+/**
+ * Extract key information from codebase context for AI prompt
+ * Dynamically formats based on available fields
  */
 export function formatCodebaseContextForPrompt(repo: 'frontend' | 'backend'): string {
-  const context = loadCodebaseContext();
-  const repoContext = context[repo];
-  const shared = context.sharedContext;
+  const context = loadRepoContext(repo);
 
-  // Build formatted context string
+  if (!context) {
+    return `## ${repo.toUpperCase()} Codebase Context\n\nNo context available.\n`;
+  }
+
   let formatted = `## ${repo.toUpperCase()} Codebase Context\n\n`;
 
-  formatted += `**Repository:** ${repoContext.name}\n`;
-  formatted += `**Description:** ${repoContext.description}\n\n`;
+  // Format basic info
+  if (context.name) formatted += `**Repository:** ${context.name}\n`;
+  if (context.description) formatted += `**Description:** ${context.description}\n\n`;
 
-  // Tech Stack
-  if (Object.keys(repoContext.techStack).length > 0) {
-    formatted += `**Tech Stack:**\n`;
-    for (const [key, value] of Object.entries(repoContext.techStack)) {
-      formatted += `- ${key}: ${value}\n`;
+  // Format tech stack
+  if (context.techStack) {
+    formatted += `**Tech Stack:**${formatValue(context.techStack, 1)}\n\n`;
+  }
+
+  // Format architecture
+  if (context.architecture) {
+    formatted += `**Architecture:**${formatValue(context.architecture, 1)}\n\n`;
+  }
+
+  // Format path aliases (important for providing specific file paths)
+  if (context.pathAliases && context.pathAliases.aliases) {
+    formatted += `**Path Aliases (use these in file references):**\n`;
+    for (const [alias, path] of Object.entries(context.pathAliases.aliases)) {
+      formatted += `- ${alias} → ${path}\n`;
     }
     formatted += '\n';
   }
 
-  // Architecture
-  formatted += `**Architecture Pattern:** ${repoContext.architecture.pattern}\n\n`;
+  // Format state management
+  if (context.stateManagement) {
+    formatted += `**State Management:**${formatValue(context.stateManagement, 1)}\n\n`;
+  }
 
-  if (repoContext.architecture.keyDirectories.length > 0) {
-    formatted += `**Key Directories:**\n`;
-    for (const dir of repoContext.architecture.keyDirectories) {
-      formatted += `- ${dir}\n`;
+  // Format routing
+  if (context.routing) {
+    formatted += `**Routing:**${formatValue(context.routing, 1)}\n\n`;
+  }
+
+  // Format styling
+  if (context.styling) {
+    formatted += `**Styling:**${formatValue(context.styling, 1)}\n\n`;
+  }
+
+  // Format API integration
+  if (context.api) {
+    formatted += `**API Integration:**${formatValue(context.api, 1)}\n\n`;
+  }
+
+  // Format common patterns (critical for AI to follow conventions)
+  if (context.commonPatterns) {
+    formatted += `**Common Patterns to Follow:**\n`;
+    if (Array.isArray(context.commonPatterns)) {
+      for (const pattern of context.commonPatterns) {
+        formatted += `${pattern}\n`;
+      }
     }
     formatted += '\n';
   }
 
-  // Key Features
-  if (repoContext.keyFeatures.length > 0) {
-    formatted += `**Key Features:**\n`;
-    for (const feature of repoContext.keyFeatures) {
-      formatted += `- ${feature}\n`;
+  // Format known issues (helps AI identify similar problems)
+  if (context.knownIssues) {
+    formatted += `**Known Issues & Debugging Locations:**\n`;
+    if (Array.isArray(context.knownIssues)) {
+      for (const issue of context.knownIssues) {
+        formatted += `${issue}\n`;
+      }
     }
     formatted += '\n';
   }
 
-  // Common Patterns
-  if (repoContext.commonPatterns.length > 0) {
-    formatted += `**Common Patterns:**\n`;
-    for (const pattern of repoContext.commonPatterns) {
-      formatted += `- ${pattern}\n`;
-    }
-    formatted += '\n';
+  // Format file locations (helps AI provide specific file paths)
+  if (context.fileLocations) {
+    formatted += `**Key File Locations:**${formatValue(context.fileLocations, 1)}\n\n`;
   }
 
-  // Integrations
-  if (repoContext.integrations.length > 0) {
-    formatted += `**Integrations:**\n`;
-    for (const integration of repoContext.integrations) {
-      formatted += `- ${integration}\n`;
-    }
-    formatted += '\n';
-  }
-
-  // Known Issues
-  if (repoContext.knownIssues.length > 0) {
-    formatted += `**Known Issues to Check:**\n`;
-    for (const issue of repoContext.knownIssues) {
-      formatted += `- ${issue}\n`;
-    }
-    formatted += '\n';
-  }
-
-  // Shared Context
-  if (Object.keys(shared.apiConventions).length > 0) {
-    formatted += `**API Conventions:**\n`;
-    for (const [key, value] of Object.entries(shared.apiConventions)) {
-      formatted += `- ${key}: ${value}\n`;
-    }
-    formatted += '\n';
+  // Format troubleshooting
+  if (context.troubleshooting) {
+    formatted += `**Troubleshooting Guide:**${formatValue(context.troubleshooting, 1)}\n\n`;
   }
 
   return formatted;

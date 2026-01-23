@@ -1,0 +1,950 @@
+{
+  "_instructions": {
+    "purpose": "Provides AI context about carespace-admin backend codebase for accurate bug analysis",
+    "howToUse": "This file is automatically included in AI prompts when analyzing backend bugs",
+    "maintenance": "Update when architecture changes, new features added, or patterns discovered",
+    "lastUpdated": "2026-01-23",
+    "version": "0.0.1"
+  },
+  "backend": {
+    "name": "carespace-backend",
+    "version": "0.0.1",
+    "description": "NestJS monolith exposing REST APIs and WebSockets for healthcare physical therapy platform",
+    "repository": {
+      "type": "git",
+      "url": "carespace-admin",
+      "branch": "main",
+      "workingDirectory": "/Users/fusuma/dev/carespace/carespace-admin"
+    },
+    "techStack": {
+      "framework": "NestJS 11.1.3 (Node.js backend framework)",
+      "runtime": "Node.js with TypeScript 5.8.3",
+      "database": {
+        "orm": "Prisma 6.11.1",
+        "engine": "PostgreSQL",
+        "schema": "Multi-model split in prisma/models/ (19 domain models)",
+        "generators": [
+          "prisma-client-js (native + debian-openssl-3.0.x)",
+          "prisma-generator-nestjs-dto (auto-generates DTOs from Prisma schema)"
+        ],
+        "migrations": "Prisma Migrate (prisma migrate deploy in production)",
+        "extensions": "prisma-extension-pagination 0.7.5"
+      },
+      "authentication": {
+        "provider": "FusionAuth 1.57.0",
+        "tokens": "JWT with jsonwebtoken 9.0.2",
+        "strategy": "jwks-rsa 3.2.0 for token validation",
+        "guards": "Custom NestJS guards (roles.guard.ts)",
+        "middleware": "AuthMiddleware in src/auth/auth.middleware.ts"
+      },
+      "validation": {
+        "library": "class-validator 0.14.2 + class-transformer 0.5.1",
+        "schema": "Zod 3.25.74 + zod-prisma-types 3.2.4",
+        "pipes": "ValidationPipe (global), ValidateParamsId.pipe.ts"
+      },
+      "logging": {
+        "framework": "nestjs-pino 4.4.0",
+        "transports": "pino-pretty 13.0.0 (development), pino-http 10.5.0",
+        "tracing": "OpenTelemetry API with trace context injection",
+        "monitoring": "New Relic 12.23.0 (APM agent in src/newrelic.ts)"
+      },
+      "caching": {
+        "manager": "@nestjs/cache-manager 3.0.1",
+        "store": "cache-manager 7.0.1 with keyv 5.3.4",
+        "interceptors": "axios-cache-interceptor 1.8.0"
+      },
+      "websockets": {
+        "adapter": "@nestjs/platform-socket.io 11.1.3",
+        "library": "Socket.IO for real-time communication"
+      },
+      "scheduling": {
+        "framework": "@nestjs/schedule 6.0.0",
+        "cron": "Built-in NestJS cron support"
+      },
+      "events": {
+        "emitter": "@nestjs/event-emitter 3.0.1",
+        "pattern": "Domain events with listeners"
+      },
+      "azure": {
+        "identity": "@azure/identity 4.10.2 (DefaultAzureCredential)",
+        "keyVault": "@azure/keyvault-secrets 4.10.0",
+        "storage": "@azure/storage-blob 12.27.0",
+        "serviceBus": "@azure/service-bus 7.9.5",
+        "communication": "@azure/communication-email 1.0.0",
+        "dns": "@azure/arm-dns 5.1.0",
+        "containerApps": "@azure/arm-appcontainers 2.2.0"
+      },
+      "ai": {
+        "openai": "openai 4.57.3",
+        "langchain": "langchain 0.2.18 with @langchain/core 0.2.36 and @langchain/openai 0.2.10",
+        "useCases": "Program generation, clinical reasoning, content analysis"
+      },
+      "http": {
+        "client": "axios 1.10.0 with @nestjs/axios 4.0.0",
+        "compression": "compression 1.8.0",
+        "cors": "Enabled with configurable origin",
+        "bodyParser": "Express with 50MB limit for JSON and URL-encoded"
+      },
+      "documentation": {
+        "swagger": "@nestjs/swagger 11.2.0",
+        "endpoint": "/api-docs",
+        "servers": ["https://api-dev.carespace.ai/v1", "https://api-dev.carespace.ai/v2"]
+      },
+      "testing": {
+        "unit": "Jest 30.0.4 with ts-jest 29.4.0",
+        "e2e": "Supertest 7.1.1 with @nestjs/testing 11.1.3",
+        "coverage": "Jest coverage with HTML reporter"
+      },
+      "utilities": {
+        "dates": "date-fns 4.1.0",
+        "csv": "fast-csv 5.0.2 and @fast-csv/format 5.0.2",
+        "excel": "exceljs 4.4.0",
+        "pdf": "puppeteer 24.15.0 (headless browser for PDF generation)",
+        "cloudConvert": "cloudconvert 3.0.0 (file conversion webhooks)",
+        "async": "async 3.2.6",
+        "qs": "qs 6.14.0"
+      }
+    },
+    "architecture": {
+      "pattern": "NestJS Monolith transitioning to Clean Architecture",
+      "entryPoint": "src/main.ts",
+      "rootModule": "src/app.module.ts",
+      "layers": {
+        "interface": {
+          "description": "Presentation layer - HTTP controllers, DTOs, pipes, filters, interceptors",
+          "location": "Controllers in domain modules (e.g., src/user/user.controller.ts)",
+          "responsibilities": [
+            "Route handling and HTTP mapping",
+            "Request validation with DTOs",
+            "Response envelope wrapping",
+            "API versioning (v1, v2)",
+            "Swagger annotations",
+            "Authentication guards"
+          ]
+        },
+        "application": {
+          "description": "Use cases - Business logic orchestration",
+          "location": "Service files in domain modules (e.g., src/user/user.service.ts)",
+          "responsibilities": [
+            "Use case implementation",
+            "Application DTOs",
+            "Input/output ports",
+            "Transaction management",
+            "Event emission"
+          ]
+        },
+        "domain": {
+          "description": "Enterprise business rules - Pure TypeScript entities",
+          "location": "Domain models and value objects (partially in Prisma models)",
+          "responsibilities": [
+            "Entity definitions",
+            "Value objects",
+            "Domain services",
+            "Business rules validation",
+            "Domain events"
+          ]
+        },
+        "infrastructure": {
+          "description": "Frameworks and drivers - Prisma, Azure, external services",
+          "location": "src/services/, src/common/services/, src/azureStorage/",
+          "responsibilities": [
+            "Prisma repository implementations",
+            "Azure service clients",
+            "External API integrations",
+            "Configuration management",
+            "Adapters and mappers"
+          ]
+        }
+      },
+      "keyDirectories": [
+        "src/main.ts - Application bootstrap with global pipes, filters, interceptors",
+        "src/app.module.ts - Root module importing all feature modules",
+        "src/auth/ - Authentication module (FusionAuth integration, JWT, guards)",
+        "src/user/ - User management module (CRUD, roles, permissions)",
+        "src/client/ - Client/organization management module",
+        "src/rom/ - Range of Motion assessment module (mobility score, reports)",
+        "src/program/ - Program management module (templates, OpenAI generation)",
+        "src/evaluation/ - Patient evaluation module (medical history, pain assessment, health signs)",
+        "src/postureAnalytics/ - Posture analysis module (scan results, mobility reports)",
+        "src/poseEstimation/ - Pose estimation processing module (ML/AI integration)",
+        "src/reports/ - Report generation module",
+        "src/survey/ - Survey management module",
+        "src/plans/ - Treatment plans module",
+        "src/settings/ - Settings module (plans, functional goals, consent policy, pre-existing conditions)",
+        "src/activitystream/ - Activity feed module",
+        "src/stats/ - Statistics and analytics module",
+        "src/metrics/ - System metrics module",
+        "src/vr/ - Virtual rehabilitation module",
+        "src/romTemplate/ - ROM template management module",
+        "src/webhook/ - Webhook handlers module (CloudConvert, external integrations)",
+        "src/healthcheck/ - Health check endpoints module",
+        "src/migration/ - Database migration utilities module",
+        "src/fusionauth/ - FusionAuth service integration module",
+        "src/azureStorage/ - Azure Storage service module",
+        "src/services/ - Shared services (JWT, KeyVault, CSV, Queue, DB, DNS, Email)",
+        "src/common/ - Cross-cutting concerns (DTOs, errors, HTTP, validation, Prisma/Strapi services)",
+        "src/context/ - Context middleware module (request context, tenant isolation)",
+        "src/dto/ - Auto-generated DTOs from Prisma schema",
+        "prisma/ - Prisma schema and migrations",
+        "prisma/models/ - Domain model schemas (19 files: user, rom, evaluation, posture, etc.)",
+        "prisma/migrations/ - Database migration history",
+        "docs/ - Architecture, deployment, API versioning, development guides",
+        "test/ - E2E and integration tests",
+        "test/e2e/ - End-to-end API tests",
+        "test/common/ - Test utilities and fixtures"
+      ]
+    },
+    "pathAliases": {
+      "purpose": "TypeScript path aliases for cleaner imports (configured in tsconfig.json and Jest)",
+      "aliases": {
+        "@/": "src/",
+        "@common/": "src/common/",
+        "@services/": "src/services/",
+        "@user/": "src/user/",
+        "@settings/": "src/settings/",
+        "@context/": "src/context/",
+        "@fusion/": "src/fusionauth/",
+        "@client/": "src/client/",
+        "@rom/": "src/rom/",
+        "@auth/": "src/auth/",
+        "@evaluation/": "src/evaluation/",
+        "@reports/": "src/reports/",
+        "@activitystream/": "src/activitystream/",
+        "@program/": "src/program/",
+        "@webhook/": "src/webhook/",
+        "@postureAnalytics/": "src/postureAnalytics/",
+        "@romTemplate/": "src/romTemplate/",
+        "@healthcheck/": "src/healthcheck/",
+        "@migration/": "src/migration/",
+        "@azureStorage/": "src/azureStorage/",
+        "@metrics/": "src/metrics/",
+        "@plans/": "src/plans/",
+        "@vr/": "src/vr/",
+        "@poseEstimation/": "src/poseEstimation/"
+      },
+      "importRule": "ALWAYS use path aliases, NEVER use relative paths like ../../services"
+    },
+    "apiVersioning": {
+      "strategy": "URI-based versioning (NestJS native)",
+      "versions": {
+        "v1": {
+          "path": "/v1/*",
+          "status": "stable",
+          "default": true,
+          "envelope": "Legacy envelope for backward compatibility"
+        },
+        "v2": {
+          "path": "/v2/*",
+          "status": "transitional shim to v1",
+          "envelope": "Standard envelope: { success: true|false, data|error }",
+          "note": "v2 currently maps to v1 controllers while v2 migration is in progress"
+        },
+        "legacy": {
+          "path": "/* (no prefix)",
+          "status": "deprecated",
+          "sunset": "2026-03-31T00:00:00Z",
+          "headers": [
+            "Deprecation: true",
+            "Sunset: 2026-03-31T00:00:00Z",
+            "Link: </v1{originalPath}>; rel=\"alternate\"; title=\"Versioned endpoint\""
+          ],
+          "note": "Legacy routes rewritten to /v1 internally for backward compatibility"
+        }
+      },
+      "middleware": "Legacy route rewriting in src/main.ts (lines 44-63)",
+      "interceptors": "ResponseEnvelopeInterceptor detects v2 via originalUrl for envelope wrapping"
+    },
+    "middleware": {
+      "global": [
+        "AuthMiddleware - JWT validation and user context injection (src/auth/auth.middleware.ts)",
+        "ClientMiddleware - Client/organization context (src/client/)",
+        "UserMiddleware - User data enrichment (src/user/)",
+        "ContextMiddleware - Request context management (src/context/)",
+        "Compression - Response compression (compression 1.8.0)",
+        "CORS - Cross-origin resource sharing",
+        "Body Parser - 50MB limit for JSON and URL-encoded"
+      ],
+      "excluded": [
+        "Auth routes: /auth/sign-in, /auth/login, /auth/logout, /auth/token, /auth/refresh-token, /auth/register, /auth/password-recovery",
+        "Webhook routes: /webhook/*path",
+        "Health check: /",
+        "API docs: /api-docs, /doc, /swagger-auth.js"
+      ]
+    },
+    "globalPipes": [
+      "ValidationPipe - class-validator with whitelist, transform, forbidNonWhitelisted",
+      "ValidateParamsId - Custom UUID validation for route parameters (src/common/validation/ValidateParamsId.pipe.ts)"
+    ],
+    "globalFilters": [
+      "GlobalExceptionFilter - Catches unhandled exceptions (executes last)",
+      "PrismaClientExceptionFilter - Catches Prisma errors (executes first)",
+      "Note: Filters execute in reverse order of registration"
+    ],
+    "globalInterceptors": [
+      "ResponseEnvelopeInterceptor - Wraps responses in standard envelope (src/common/http/responseEnvelope.interceptor.ts)",
+      "LoggerErrorInterceptor - Logs errors with Pino (nestjs-pino)"
+    ],
+    "database": {
+      "provider": "PostgreSQL",
+      "orm": "Prisma 6.11.1",
+      "connectionPool": "Default Prisma connection pooling",
+      "schemaLocation": "prisma/schema.prisma",
+      "models": [
+        "prisma/models/user.prisma - User accounts, roles, permissions",
+        "prisma/models/client.prisma - Client/organization management",
+        "prisma/models/rom.prisma - Range of Motion assessments",
+        "prisma/models/evaluation.prisma - Patient evaluations",
+        "prisma/models/postureanalytics.prisma - Posture analysis data",
+        "prisma/models/poseestimation.prisma - Pose estimation results",
+        "prisma/models/performance.prisma - Performance metrics",
+        "prisma/models/reports.prisma - Report generation data",
+        "prisma/models/survey.prisma - Survey data",
+        "prisma/models/plans.prisma - Treatment plans",
+        "prisma/models/functionalgoals.prisma - Functional goals",
+        "prisma/models/mobilityscore.prisma - Mobility scoring",
+        "prisma/models/preexistingconditions.prisma - Pre-existing conditions",
+        "prisma/models/settings.prisma - Application settings",
+        "prisma/models/activitystream.prisma - Activity feed",
+        "prisma/models/stats.prisma - Statistics",
+        "prisma/models/vr.prisma - Virtual rehabilitation",
+        "prisma/models/letsmove.prisma - Movement tracking",
+        "prisma/models/migrations.prisma - Migration tracking"
+      ],
+      "enums": {
+        "Status": ["pendingReview", "reviewed", "outOfParams", "escalationRequired", "followUpRequired"],
+        "OriginType": ["manual", "openai", "automated"]
+      },
+      "migrations": {
+        "command": "prisma migrate deploy (production), prisma migrate dev (development)",
+        "location": "prisma/migrations/",
+        "script": "npm run migration:generate (custom TypeScript migration generator)"
+      },
+      "seed": "ts-node --transpile-only prisma/seed.ts"
+    },
+    "authentication": {
+      "provider": "FusionAuth",
+      "flow": "OAuth 2.0 / OpenID Connect",
+      "tokens": {
+        "type": "JWT",
+        "validation": "jwks-rsa 3.2.0 (JSON Web Key Set)",
+        "service": "src/services/jwt/jwt.service.ts",
+        "refresh": "Supported via /auth/refresh-token endpoint"
+      },
+      "guards": {
+        "roles": "src/auth/common/roles.guard.ts",
+        "decorator": "src/auth/common/roles.decorator.ts",
+        "usage": "@Roles(['admin', 'superadmin']) on controller methods"
+      },
+      "middleware": "AuthMiddleware applies to all routes except excluded paths",
+      "interceptor": "UserInterceptor enriches request with user data (src/auth/common/user.interceptor.ts)"
+    },
+    "azureIntegrations": {
+      "keyVault": {
+        "service": "src/services/keyVault/keyVault.service.ts",
+        "authentication": "DefaultAzureCredential (Azure Identity 4.10.2)",
+        "preload": "Loads all secrets at startup, caches in ConfigService",
+        "localFallback": "Uses process.env for DATABASE_URL when Key Vault unavailable",
+        "requiredEnv": "KEY_VAULT_NAME (required for Azure auth)"
+      },
+      "storage": {
+        "service": "src/azureStorage/azureStorage.service.ts",
+        "useCases": [
+          "Video uploads from pose estimation",
+          "Report PDF storage",
+          "Media file storage",
+          "Blob management with SAS tokens"
+        ]
+      },
+      "serviceBus": {
+        "service": "src/services/queue/queue.service.ts",
+        "queues": [
+          "AZURE-SERVICE-BUS-QUEUE-NAME - General queue",
+          "AZURE-SERVICE-BUS-POSE-ESTIMATION - Pose estimation requests",
+          "AZURE-SERVICE-BUS-POSE-ESTIMATION-RESULTS - Pose estimation results",
+          "AZURE-SERVICE-BUS-POSE-ESTIMATION-CLASSIFIER - Pose classification"
+        ],
+        "listeners": "src/services/queue/queue.listener.ts",
+        "events": "src/services/queue/queue.events.ts"
+      },
+      "communication": {
+        "service": "src/services/email/email.service.ts",
+        "provider": "@azure/communication-email 1.0.0",
+        "listener": "src/services/email/email.listener.ts",
+        "useCases": "Transactional emails, password recovery, notifications"
+      },
+      "dns": {
+        "service": "src/services/dns/dns.service.ts",
+        "listener": "src/services/dns/dns.listener.ts",
+        "useCases": "Dynamic DNS record management for custom domains"
+      },
+      "containerApps": {
+        "management": "@azure/arm-appcontainers 2.2.0",
+        "useCases": "Container orchestration, deployment automation"
+      }
+    },
+    "externalServices": {
+      "fusionAuth": {
+        "client": "@fusionauth/typescript-client 1.57.0",
+        "module": "src/fusionauth/fusionauth.module.ts",
+        "endpoints": [
+          "User registration",
+          "User authentication",
+          "Password recovery",
+          "User management",
+          "Role assignment"
+        ],
+        "secrets": [
+          "FUSIONAUTH-HOST",
+          "FUSIONAUTH-API-KEY",
+          "FUSIONAUTH-THEME-ID",
+          "FUSIONAUTH-WEBHOOK-ID"
+        ]
+      },
+      "openai": {
+        "client": "openai 4.57.3 with langchain 0.2.18",
+        "module": "src/program/openai/openai.module.ts",
+        "useCases": [
+          "Program generation from patient data",
+          "Exercise recommendations",
+          "Clinical reasoning assistance",
+          "Content analysis and summarization"
+        ]
+      },
+      "strapi": {
+        "service": "src/common/services/strapi.service.ts",
+        "useCases": "CMS content fetching, translation loading",
+        "secrets": ["STRAPI-URL", "STRAPI-API-KEY"]
+      },
+      "cloudConvert": {
+        "client": "cloudconvert 3.0.0",
+        "module": "src/webhook/webhook.module.ts",
+        "useCases": "File format conversion via webhooks",
+        "secret": "CLOUD-CONVERT-API-KEY"
+      },
+      "newRelic": {
+        "agent": "newrelic 12.23.0",
+        "config": "src/newrelic.ts",
+        "monitoring": "APM, error tracking, transaction tracing"
+      }
+    },
+    "apiEndpoints": {
+      "auth": {
+        "controller": "src/auth/auth.controller.ts",
+        "baseUrl": "/v1/auth",
+        "endpoints": [
+          "POST /sign-in - User login with credentials",
+          "GET /login - OAuth login redirect",
+          "GET /logout - User logout",
+          "POST /token - Exchange code for token",
+          "POST /refresh-token - Refresh access token",
+          "POST /register - User registration",
+          "POST /password-recovery - Password reset request"
+        ]
+      },
+      "users": {
+        "controller": "src/user/user.controller.ts",
+        "baseUrl": "/v1/users",
+        "endpoints": [
+          "GET / - List users (paginated, filtered)",
+          "GET /:id - Get user by ID",
+          "POST / - Create user",
+          "PATCH /:id - Update user",
+          "DELETE /:id - Delete user"
+        ]
+      },
+      "rom": {
+        "controller": "src/rom/rom.controller.ts",
+        "baseUrl": "/v1/rom",
+        "endpoints": [
+          "GET / - List ROM assessments",
+          "GET /:id - Get ROM assessment by ID",
+          "POST / - Create ROM assessment",
+          "PATCH /:id - Update ROM assessment",
+          "DELETE /:id - Delete ROM assessment",
+          "GET /mobility-score - Mobility score endpoints",
+          "GET /mobility-report - Mobility report generation"
+        ]
+      },
+      "postureAnalytics": {
+        "controller": "src/postureAnalytics/postureAnalytics.controller.ts",
+        "baseUrl": "/v1/posture-analytics",
+        "endpoints": [
+          "GET / - List posture analytics",
+          "GET /:id - Get posture analytics by ID",
+          "POST / - Create posture analysis",
+          "GET /mobility-report - Generate mobility report"
+        ]
+      },
+      "program": {
+        "controller": "src/program/program.controller.ts",
+        "baseUrl": "/v1/program",
+        "endpoints": [
+          "GET / - List programs",
+          "GET /:id - Get program by ID",
+          "POST / - Create program",
+          "PATCH /:id - Update program",
+          "DELETE /:id - Delete program",
+          "POST /open-ai - Generate program with OpenAI",
+          "GET /program-template - List program templates"
+        ]
+      },
+      "evaluation": {
+        "controller": "src/evaluation/evaluation.controller.ts",
+        "baseUrl": "/v1/evaluation",
+        "endpoints": [
+          "GET / - List evaluations",
+          "GET /:id - Get evaluation by ID",
+          "POST / - Create evaluation",
+          "PATCH /:id - Update evaluation",
+          "GET /medical-history - Medical history endpoints",
+          "GET /pain-assessment - Pain assessment endpoints",
+          "GET /health-sign - Health sign endpoints"
+        ]
+      },
+      "settings": {
+        "controller": "src/settings/settings.controller.ts",
+        "baseUrl": "/v1/settings",
+        "endpoints": [
+          "GET / - Get settings",
+          "PATCH / - Update settings",
+          "GET /plans - Plans settings",
+          "GET /functional-goals - Functional goals settings",
+          "GET /consent-policy - Consent policy settings",
+          "GET /pre-existing-conditions - Pre-existing conditions settings"
+        ]
+      },
+      "reports": {
+        "controller": "src/reports/reports.controller.ts",
+        "baseUrl": "/v1/reports",
+        "endpoints": [
+          "GET / - List reports",
+          "GET /:id - Get report by ID",
+          "POST / - Generate report",
+          "GET /:id/download - Download report PDF"
+        ]
+      },
+      "webhook": {
+        "controller": "src/webhook/webhook.controller.ts",
+        "baseUrl": "/v1/webhook",
+        "endpoints": [
+          "POST /cloudconvert - CloudConvert webhook handler",
+          "POST /* - Generic webhook handlers"
+        ]
+      },
+      "healthcheck": {
+        "controller": "src/healthcheck/healthcheck.controller.ts",
+        "baseUrl": "/v1",
+        "endpoints": [
+          "GET / - Health check endpoint"
+        ]
+      }
+    },
+    "commonPatterns": [
+      "Module Organization:",
+      "- Each domain has a module file (*.module.ts) that imports providers and exports services",
+      "- Controllers handle HTTP requests and delegate to services",
+      "- Services contain business logic and interact with repositories",
+      "- DTOs are auto-generated from Prisma schema in src/dto/",
+      "",
+      "Data Flow:",
+      "- Controller receives request → Validates with DTOs → Calls service",
+      "- Service executes use case → Interacts with Prisma → Returns data",
+      "- Interceptor wraps response in envelope → Controller returns HTTP response",
+      "",
+      "Error Handling:",
+      "- Throw HttpException or custom exceptions from NestJS",
+      "- GlobalExceptionFilter catches unhandled exceptions",
+      "- PrismaClientExceptionFilter handles Prisma errors",
+      "- All errors wrapped in standard envelope: { success: false, error: {...} }",
+      "",
+      "Authentication:",
+      "- AuthMiddleware validates JWT on all routes (except excluded)",
+      "- Use @Roles() decorator on controllers/methods for authorization",
+      "- RolesGuard checks user roles from JWT claims",
+      "- UserInterceptor enriches request with user data",
+      "",
+      "Configuration:",
+      "- All secrets loaded from Azure Key Vault at startup",
+      "- Local development: Use KEY_VAULT_NAME + Azure auth (az login)",
+      "- ConfigService.getOrThrow() used for fail-fast on missing config",
+      "- Dashed keys (FUSIONAUTH-HOST) come from Key Vault only",
+      "",
+      "Database Access:",
+      "- Use PrismaService (src/common/services/prisma.service.ts) injected via DI",
+      "- Prefer Prisma queries over raw SQL for type safety",
+      "- Use transactions for multi-model operations",
+      "- Pagination: prisma-extension-pagination for paginated queries",
+      "",
+      "API Versioning:",
+      "- Always specify version in @Controller({ path, version: ['1', '2'] })",
+      "- v1 is stable, v2 is transitional shim",
+      "- ResponseEnvelopeInterceptor detects v2 for envelope wrapping",
+      "- Legacy routes emit deprecation headers",
+      "",
+      "Logging:",
+      "- Use nestjs-pino Logger injected via DI",
+      "- Logs include trace IDs from OpenTelemetry",
+      "- Never use console.log, always use logger.log/error/warn/debug",
+      "- Pino pretty transport in development, JSON in production",
+      "",
+      "Events:",
+      "- Use @nestjs/event-emitter for domain events",
+      "- Emit events from services: this.eventEmitter.emit('event.name', payload)",
+      "- Create listeners with @OnEvent('event.name') decorator",
+      "- Examples: email.listener.ts, dns.listener.ts, queue.listener.ts",
+      "",
+      "Async Processing:",
+      "- Use Azure Service Bus for background jobs",
+      "- Queue service: src/services/queue/queue.service.ts",
+      "- Pose estimation processing via queue",
+      "- Scheduled tasks with @nestjs/schedule (e.g., @Cron expressions)",
+      "",
+      "Testing:",
+      "- Unit tests: Jest with @nestjs/testing",
+      "- E2E tests: Supertest for HTTP testing",
+      "- Mock Prisma with jest.mock() or use test DB",
+      "- Run: npm run test:unit (unit), npm run test:e2e (E2E)",
+      "",
+      "Security:",
+      "- Validate all inputs with DTOs and class-validator",
+      "- Use @Roles() guard for authorization",
+      "- Never expose sensitive data in responses",
+      "- Sanitize user inputs to prevent injection",
+      "- Use Prisma parameterized queries (no raw SQL with user input)",
+      "",
+      "Performance:",
+      "- Use caching for expensive operations (cache-manager)",
+      "- Paginate large result sets (prisma-extension-pagination)",
+      "- Use Prisma select to fetch only needed fields",
+      "- Index frequently queried fields in Prisma schema",
+      "- Monitor with New Relic APM"
+    ],
+    "knownIssues": [
+      "Configuration:",
+      "- Missing Key Vault secrets: App fails fast with clear error from getOrThrow()",
+      "- Local development: Ensure KEY_VAULT_NAME set and Azure auth (az login) configured",
+      "- Dashed keys (FUSIONAUTH-HOST) only work from Key Vault, not OS env vars",
+      "- Check docs/env.example.md for required secrets",
+      "",
+      "Database:",
+      "- Prisma client not generated: Run 'npx prisma generate' after schema changes",
+      "- Migration conflicts: Resolve with 'prisma migrate resolve' or reset dev DB",
+      "- Connection pool exhausted: Check connection leaks, ensure proper disposal",
+      "- Timeout errors: Increase query timeout or optimize slow queries",
+      "",
+      "Authentication:",
+      "- JWT validation fails: Check FUSIONAUTH-API-KEY and FUSIONAUTH-HOST in Key Vault",
+      "- Expired tokens: Use /auth/refresh-token endpoint",
+      "- Missing user context: Verify AuthMiddleware not excluded for route",
+      "- Role check fails: Ensure roles in JWT claims match @Roles() decorator",
+      "",
+      "API Versioning:",
+      "- v2 envelope issues: Check ResponseEnvelopeInterceptor detects v2 via originalUrl",
+      "- Legacy route not rewritten: Verify middleware in src/main.ts (lines 44-63)",
+      "- Swagger shows wrong envelope: Check swagger-tags.ts and swagger-helpers.ts",
+      "",
+      "Azure Services:",
+      "- Service Bus connection fails: Verify AZURE-SERVICE-BUS-CONNECTION-STRING in Key Vault",
+      "- Storage upload fails: Check AZURE-STORAGE-CONNECTION-STRING",
+      "- Email not sent: Verify AZURE-COMMUNICATION-SERVICE-STRING",
+      "- Key Vault access denied: Ensure DefaultAzureCredential has permissions",
+      "",
+      "Logging:",
+      "- Missing trace IDs: Check OpenTelemetry integration in app.module.ts",
+      "- Logs not pretty: Verify pino-pretty transport in LoggerModule config",
+      "- Uncaught exceptions: Check process.on handlers in src/main.ts",
+      "",
+      "Performance:",
+      "- Slow API responses: Check New Relic APM for bottlenecks",
+      "- High memory usage: Profile with Node.js --inspect flag",
+      "- Large response payloads: Use pagination and field selection",
+      "- Cache misses: Verify cache-manager configuration",
+      "",
+      "OpenAI/LangChain:",
+      "- Program generation fails: Check OpenAI API key and rate limits",
+      "- Timeout on LangChain: Increase axios timeout in openai module",
+      "- Hallucinations: Validate AI-generated content before storing",
+      "",
+      "WebSockets:",
+      "- Connection drops: Check Socket.IO adapter configuration",
+      "- CORS issues: Verify CORS settings in src/main.ts",
+      "",
+      "Build/Deployment:",
+      "- TypeScript compilation errors: Run 'npm run build' to check",
+      "- Docker build fails: Ensure Prisma binaries for debian-openssl-3.0.x",
+      "- Migration not applied: Run 'npx prisma migrate deploy' in production",
+      "- Port conflict: Check PORT in Key Vault matches docker-compose"
+    ],
+    "environmentVariables": {
+      "minimal": {
+        "description": "Minimal OS-level env vars for local development",
+        "variables": [
+          "NODE_ENV=localhost",
+          "PORT=3000",
+          "DATABASE_URL=postgresql://user:pass@localhost:5432/carespace?schema=public",
+          "KEY_VAULT_NAME=your-key-vault-name",
+          "AZURE_TENANT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (optional for service principal)",
+          "AZURE_CLIENT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (optional for service principal)",
+          "AZURE_CLIENT_SECRET=your-sp-secret (optional for service principal)"
+        ]
+      },
+      "keyVaultSecrets": {
+        "description": "Secrets loaded from Azure Key Vault (dashed names)",
+        "fusionAuth": [
+          "FUSIONAUTH-HOST",
+          "FUSIONAUTH-API-KEY",
+          "FUSIONAUTH-THEME-ID",
+          "FUSIONAUTH-EMAIL-SUPPORT-ADDRESS",
+          "FUSIONAUTH-EMAIL-FROM-ADDRESS",
+          "FUSIONAUTH-FORM-USER-SELF-SERVICE",
+          "FUSIONAUTH-FORGOT-PASSWORD-EMAIL-TEMPLATE-ID",
+          "FUSIONAUTH-USER-PASSWORD",
+          "FUSIONAUTH-SUPERADMIN-PASSWORD",
+          "FUSIONAUTH-WEBHOOK-ID"
+        ],
+        "azureServiceBus": [
+          "AZURE-SERVICE-BUS-CONNECTION-STRING",
+          "AZURE-SERVICE-BUS-QUEUE-NAME",
+          "AZURE-SERVICE-BUS-POSE-ESTIMATION",
+          "AZURE-SERVICE-BUS-POSE-ESTIMATION-RESULTS",
+          "AZURE-SERVICE-BUS-POSE-ESTIMATION-CLASSIFIER"
+        ],
+        "azureStorage": [
+          "AZURE-STORAGE-KEY",
+          "AZURE-STORAGE-CONNECTION-STRING",
+          "AZURE-COMMUNICATION-SERVICE-STRING",
+          "CLOUD-CONVERT-API-KEY"
+        ],
+        "strapi": [
+          "STRAPI-URL",
+          "STRAPI-API-KEY"
+        ],
+        "dns": [
+          "AZURE-SUBSCRIPTION-ID",
+          "AZURE-DNS-TXT-VALUE",
+          "AZURE-DNS-CNAME-VALUE",
+          "AZURE-CONTAINER-APP-NAME"
+        ],
+        "app": [
+          "NODE-ENV (dashed, from Key Vault)",
+          "PORT",
+          "DATABASE-URL (dashed, from Key Vault)"
+        ]
+      },
+      "documentation": "See docs/env.example.md for complete reference"
+    },
+    "scripts": {
+      "development": [
+        "npm start - Start server (localhost, TZ=UTC)",
+        "npm run start:dev - Start with watch mode",
+        "npm run start:debug - Start with debugger"
+      ],
+      "build": [
+        "npm run build - Build for production (NestJS CLI)",
+        "npm run prebuild - Clean dist/ before build"
+      ],
+      "production": [
+        "npm run start:prod - Run migrations + start server (TZ=UTC)"
+      ],
+      "testing": [
+        "npm test - Run all tests",
+        "npm run test:unit - Run unit tests only",
+        "npm run test:e2e - Run E2E tests",
+        "npm run test:watch - Watch mode",
+        "npm run test:cov - Coverage report",
+        "npm run test:debug - Debug tests"
+      ],
+      "linting": [
+        "npm run lint - ESLint with auto-fix",
+        "npm run format - Prettier format",
+        "npm run prettier-format - Prettier with config"
+      ],
+      "database": [
+        "npx prisma generate - Generate Prisma client",
+        "npx prisma migrate dev - Create and apply migration (dev)",
+        "npx prisma migrate deploy - Apply migrations (prod)",
+        "npx prisma studio - Open Prisma Studio GUI",
+        "npx prisma db seed - Run seed script",
+        "npm run migration:generate - Custom migration generator",
+        "npm run migration:run - Run custom migrations"
+      ],
+      "validation": [
+        "npm run validate - Format + lint + build (CI check)"
+      ]
+    },
+    "fileLocations": {
+      "entryPoint": [
+        "src/main.ts - Application bootstrap with global config",
+        "src/newrelic.ts - New Relic APM initialization"
+      ],
+      "rootModule": [
+        "src/app.module.ts - Root module with all feature modules"
+      ],
+      "authentication": [
+        "src/auth/auth.controller.ts - Auth endpoints",
+        "src/auth/auth.service.ts - Auth business logic",
+        "src/auth/auth.middleware.ts - JWT validation middleware",
+        "src/auth/common/roles.guard.ts - Role-based authorization guard",
+        "src/auth/common/roles.decorator.ts - @Roles() decorator",
+        "src/auth/common/user.interceptor.ts - User context enrichment",
+        "src/services/jwt/jwt.service.ts - JWT token service"
+      ],
+      "database": [
+        "prisma/schema.prisma - Prisma schema root",
+        "prisma/models/ - Domain model schemas (19 files)",
+        "prisma/migrations/ - Migration history",
+        "src/common/services/prisma.service.ts - Prisma service",
+        "src/services/db/db.service.ts - Database service extensions"
+      ],
+      "errors": [
+        "src/common/errors/globalExceptionFilter.ts - Global exception handler",
+        "src/common/errors/prismaClientExceptionFilter.ts - Prisma error handler",
+        "src/common/errors/validationException.ts - Validation exception"
+      ],
+      "http": [
+        "src/common/http/responseEnvelope.interceptor.ts - Response envelope wrapper",
+        "src/common/http/responseEnvelope.ts - Envelope types",
+        "src/common/http/swagger-helpers.ts - Swagger helpers"
+      ],
+      "validation": [
+        "src/common/validation/ValidateParamsId.pipe.ts - UUID validation pipe",
+        "src/common/dto/ - Common DTOs",
+        "src/dto/ - Auto-generated DTOs from Prisma"
+      ],
+      "services": [
+        "src/services/keyVault/keyVault.service.ts - Azure Key Vault",
+        "src/services/jwt/jwt.service.ts - JWT tokens",
+        "src/services/queue/queue.service.ts - Azure Service Bus",
+        "src/services/csv/csv.service.ts - CSV generation",
+        "src/services/db/db.service.ts - Database extensions",
+        "src/services/dns/dns.service.ts - Azure DNS",
+        "src/services/email/email.service.ts - Azure Communication",
+        "src/common/services/strapi.service.ts - Strapi CMS",
+        "src/common/services/prisma.service.ts - Prisma client"
+      ],
+      "azure": [
+        "src/azureStorage/azureStorage.service.ts - Azure Storage",
+        "src/services/queue/queue.service.ts - Service Bus",
+        "src/services/email/email.service.ts - Communication Email",
+        "src/services/dns/dns.service.ts - DNS management",
+        "src/services/keyVault/keyVault.service.ts - Key Vault"
+      ],
+      "ai": [
+        "src/program/openai/openai.module.ts - OpenAI integration",
+        "src/program/openai/openai.controller.ts - AI endpoints",
+        "src/program/openai/openai.service.ts - LangChain usage"
+      ],
+      "swagger": [
+        "src/swagger-tags.ts - Swagger tags definition",
+        "src/swagger-auth.ts - Swagger authentication"
+      ],
+      "documentation": [
+        "docs/architecture.md - Architecture overview",
+        "docs/env.example.md - Environment variables reference",
+        "docs/api-versioning.md - API versioning strategy",
+        "docs/deployment-guide.md - Deployment instructions",
+        "docs/development-guide.md - Development setup",
+        "docs/clean-architecture-migration.md - Clean architecture guide",
+        "docs/data-models.md - Data model documentation"
+      ]
+    },
+    "bestPractices": [
+      "Module Organization:",
+      "- Keep controllers thin, delegate to services",
+      "- Services contain business logic only",
+      "- Use dependency injection for all services",
+      "- Follow Clean Architecture layers",
+      "",
+      "Error Handling:",
+      "- Throw HttpException with proper status codes",
+      "- Let global filters handle exceptions",
+      "- Log errors with contextual information",
+      "- Return standard envelope for all errors",
+      "",
+      "Database Access:",
+      "- Inject PrismaService via DI",
+      "- Use Prisma type-safe queries",
+      "- Prefer transactions for multi-model ops",
+      "- Index frequently queried fields",
+      "",
+      "Authentication:",
+      "- Use @Roles() decorator for authorization",
+      "- Validate JWT on all protected routes",
+      "- Never expose sensitive user data",
+      "- Refresh tokens before expiry",
+      "",
+      "Configuration:",
+      "- All secrets from Azure Key Vault",
+      "- Use ConfigService.getOrThrow() for fail-fast",
+      "- Never hardcode secrets in code",
+      "- Document required env vars",
+      "",
+      "Logging:",
+      "- Use Logger from nestjs-pino",
+      "- Include trace IDs for correlation",
+      "- Log at appropriate levels (error, warn, info, debug)",
+      "- Never log sensitive data",
+      "",
+      "API Design:",
+      "- Version all endpoints with @Controller({ version })",
+      "- Use DTOs for request validation",
+      "- Return standard envelope for responses",
+      "- Document with Swagger decorators",
+      "",
+      "Testing:",
+      "- Write unit tests for services",
+      "- Write E2E tests for critical flows",
+      "- Mock external dependencies",
+      "- Test error handling paths",
+      "",
+      "Security:",
+      "- Validate all inputs with DTOs",
+      "- Use parameterized queries (Prisma)",
+      "- Sanitize user inputs",
+      "- Follow OWASP top 10 guidelines",
+      "",
+      "Performance:",
+      "- Cache expensive operations",
+      "- Paginate large result sets",
+      "- Use Prisma select for field selection",
+      "- Monitor with New Relic APM"
+    ],
+    "troubleshooting": {
+      "configurationIssues": [
+        "Missing secrets: Check Key Vault for required dashed keys",
+        "Local auth: Ensure 'az login' or service principal configured",
+        "Port conflict: Verify PORT in Key Vault matches docker-compose",
+        "Database connection: Check DATABASE_URL format and credentials"
+      ],
+      "databaseIssues": [
+        "Prisma client outdated: Run 'npx prisma generate'",
+        "Migration errors: Check prisma/migrations/ and resolve conflicts",
+        "Connection pool exhausted: Check for connection leaks",
+        "Slow queries: Use Prisma Studio to inspect query performance"
+      ],
+      "authenticationIssues": [
+        "JWT validation fails: Verify FUSIONAUTH-HOST and FUSIONAUTH-API-KEY",
+        "Expired tokens: Use /auth/refresh-token endpoint",
+        "Missing user context: Check AuthMiddleware configuration",
+        "Role authorization fails: Verify JWT claims and @Roles() decorator"
+      ],
+      "apiVersioningIssues": [
+        "v2 envelope not applied: Check ResponseEnvelopeInterceptor",
+        "Legacy route not working: Verify middleware in src/main.ts",
+        "Swagger wrong envelope: Check swagger-helpers.ts configuration"
+      ],
+      "azureServiceIssues": [
+        "Service Bus connection: Verify connection string in Key Vault",
+        "Storage upload fails: Check AZURE-STORAGE-CONNECTION-STRING",
+        "Email not sent: Verify Azure Communication Service string",
+        "Key Vault access denied: Check DefaultAzureCredential permissions"
+      ],
+      "performanceIssues": [
+        "Slow responses: Check New Relic APM for bottlenecks",
+        "High memory: Profile with Node.js --inspect",
+        "Large payloads: Use pagination and field selection",
+        "Cache misses: Verify cache-manager configuration"
+      ]
+    }
+  }
+}
