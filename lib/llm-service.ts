@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { BugReport, EnhancedBugReport, ClaudePromptStyle } from './types';
 import { loadSettings } from './ai-settings';
 import { sanitizeBugReportForPrompt } from './prompt-sanitizer';
+import { formatCodebaseContextForPrompt } from './codebase-context-loader';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
@@ -179,7 +180,14 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
 
   // Load configurable settings and use the prompt template
   const settings = loadSettings();
-  const prompt = fillTemplate(settings.promptTemplate.template, sanitizedBugReport);
+  let prompt = fillTemplate(settings.promptTemplate.template, sanitizedBugReport);
+
+  // Add codebase context to the prompt
+  // Include both frontend and backend contexts - AI will determine which is relevant
+  const frontendContext = formatCodebaseContextForPrompt('frontend');
+  const backendContext = formatCodebaseContextForPrompt('backend');
+
+  prompt += `\n\n## Available Codebase Context\n\nUse this context to provide specific file paths, function names, and architectural guidance in your analysis.\n\n${frontendContext}\n${backendContext}\n\n**IMPORTANT:** Reference specific files, directories, and patterns from the appropriate codebase context in your codebaseContext and claudePrompt fields.`;
 
   try {
     const message = await anthropic.messages.create({

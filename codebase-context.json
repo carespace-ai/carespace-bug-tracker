@@ -1,0 +1,133 @@
+{
+  "frontend": {
+    "name": "carespace-frontend",
+    "description": "CareSpace Frontend Application - Next.js React application",
+    "techStack": {
+      "framework": "Next.js 14+",
+      "language": "TypeScript",
+      "styling": "Tailwind CSS",
+      "stateManagement": "React Context / Redux (specify which)",
+      "routing": "Next.js App Router",
+      "testing": "Jest, React Testing Library"
+    },
+    "architecture": {
+      "pattern": "Component-based architecture with feature folders",
+      "keyDirectories": [
+        "app/ - Next.js app router pages and layouts",
+        "components/ - Reusable React components",
+        "lib/ - Utility functions and shared logic",
+        "hooks/ - Custom React hooks",
+        "services/ - API client services",
+        "types/ - TypeScript type definitions",
+        "config/ - Configuration files"
+      ]
+    },
+    "keyFeatures": [
+      "User authentication and authorization",
+      "Dashboard and data visualization",
+      "Form handling and validation",
+      "Real-time updates",
+      "File uploads",
+      "Responsive design"
+    ],
+    "commonPatterns": [
+      "Server Components vs Client Components (use 'use client' directive)",
+      "API calls through fetch or dedicated API client",
+      "Form validation with Zod or React Hook Form",
+      "Error boundaries for error handling",
+      "Loading states with Suspense boundaries"
+    ],
+    "integrations": [
+      "Backend API at /api/* or external URL",
+      "Authentication service (Auth0, Clerk, NextAuth, custom)",
+      "Analytics (Google Analytics, Mixpanel, etc.)",
+      "Error tracking (Sentry, etc.)"
+    ],
+    "knownIssues": [
+      "Add known recurring issues here for AI to reference"
+    ]
+  },
+  "backend": {
+    "name": "carespace-backend",
+    "description": "CareSpace Backend API",
+    "techStack": {
+      "framework": "Next.js API Routes / Express / NestJS (specify which)",
+      "language": "TypeScript",
+      "database": "PostgreSQL / MySQL / MongoDB (specify which)",
+      "orm": "Prisma / TypeORM / Mongoose (specify which)",
+      "authentication": "JWT / OAuth / Custom (specify which)",
+      "validation": "Zod / Joi / Class-validator (specify which)"
+    },
+    "architecture": {
+      "pattern": "Layered architecture (Controller -> Service -> Repository)",
+      "keyDirectories": [
+        "app/api/ - API route handlers (if Next.js)",
+        "src/controllers/ - Request handlers",
+        "src/services/ - Business logic",
+        "src/models/ - Database models",
+        "src/middleware/ - Express/Next.js middleware",
+        "src/utils/ - Utility functions",
+        "src/types/ - TypeScript types",
+        "prisma/ - Database schema and migrations (if using Prisma)"
+      ]
+    },
+    "keyFeatures": [
+      "RESTful API endpoints",
+      "User authentication and session management",
+      "Database operations and transactions",
+      "File upload handling",
+      "Background jobs and queues",
+      "Email notifications",
+      "Third-party API integrations"
+    ],
+    "commonPatterns": [
+      "Request validation middleware",
+      "Error handling middleware",
+      "Authentication guards",
+      "Database transaction patterns",
+      "API versioning strategy",
+      "Rate limiting implementation"
+    ],
+    "integrations": [
+      "Database (specify connection details location)",
+      "Redis for caching/sessions",
+      "Message queue (RabbitMQ, Bull, etc.)",
+      "Email service (SendGrid, AWS SES, etc.)",
+      "File storage (S3, Cloudinary, etc.)",
+      "External APIs (payment, notifications, etc.)"
+    ],
+    "knownIssues": [
+      "Add known recurring issues here for AI to reference"
+    ]
+  },
+  "sharedContext": {
+    "apiConventions": {
+      "responseFormat": "Standard JSON response format with { success, data, error }",
+      "errorCodes": "List common error codes and their meanings",
+      "authentication": "JWT in Authorization header / Cookies / etc.",
+      "pagination": "Cursor-based / Offset-based (specify pattern)"
+    },
+    "deploymentInfo": {
+      "frontend": "Vercel / Netlify / AWS / etc.",
+      "backend": "Vercel / Railway / AWS / etc.",
+      "database": "Hosted on...",
+      "environment": "Development / Staging / Production configurations"
+    },
+    "developmentWorkflow": {
+      "branchStrategy": "main, develop, feature/* (specify)",
+      "testingRequirements": "All features must have tests",
+      "codeReviewProcess": "PR review required",
+      "cicd": "GitHub Actions / CircleCI / etc."
+    }
+  },
+  "_instructions": {
+    "howToUse": "Fill in this file with accurate information about your codebases. The AI will use this context when analyzing bugs to provide more accurate file locations, function names, and fix instructions.",
+    "updateFrequency": "Update this file when you add new features, change architecture patterns, or refactor major components.",
+    "tips": [
+      "Be specific about file paths and naming conventions",
+      "Include common debugging locations (e.g., 'Check src/middleware/auth.ts for auth issues')",
+      "Document known patterns (e.g., 'All API routes use try-catch with next(error)')",
+      "Add examples of similar bugs and how they were fixed"
+    ]
+  }
+}
