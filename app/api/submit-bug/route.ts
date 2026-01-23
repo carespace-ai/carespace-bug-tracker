@@ -100,14 +100,25 @@ export async function POST(request: NextRequest) {
     const maxFileSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = [
       'image/jpeg',
+      'image/jpg',
       'image/png',
       'image/gif',
       'image/webp',
+      'image/bmp',
       'video/mp4',
       'video/quicktime',
       'text/plain',
       'application/pdf',
       'application/json'
+    ];
+
+    // Allowed file extensions (fallback for when MIME type is application/octet-stream)
+    const allowedExtensions = [
+      '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp',
+      '.mp4', '.mov',
+      '.txt', '.log',
+      '.pdf',
+      '.json'
     ];
 
     if (attachments.length > maxFileCount) {
@@ -118,15 +129,35 @@ export async function POST(request: NextRequest) {
     }
 
     for (const file of attachments) {
+      // Skip validation for empty/placeholder files
+      if (!file || file.size === 0) {
+        continue;
+      }
+
       if (file.size > maxFileSize) {
         return NextResponse.json(
           { error: `File ${file.name} exceeds maximum size of 10MB` },
           { status: 400, headers: getRateLimitHeaders(rateLimitResult) }
         );
       }
-      if (!allowedTypes.includes(file.type)) {
+
+      // Validate by MIME type or file extension
+      const fileName = file.name || 'unknown';
+      const lastDotIndex = fileName.lastIndexOf('.');
+      const fileExtension = lastDotIndex !== -1 ? fileName.toLowerCase().substring(lastDotIndex) : '';
+
+      const isValidType = allowedTypes.includes(file.type);
+      const isValidExtension = fileExtension && allowedExtensions.includes(fileExtension);
+      const isOctetStreamWithValidExtension = file.type === 'application/octet-stream' && isValidExtension;
+
+      // Debug logging (remove in production)
+      console.log(`File validation - name: ${fileName}, type: ${file.type}, ext: ${fileExtension}, validType: ${isValidType}, validExt: ${isValidExtension}`);
+
+      if (!isValidType && !isValidExtension && !isOctetStreamWithValidExtension) {
         return NextResponse.json(
-          { error: `File ${file.name} has unsupported type ${file.type}` },
+          {
+            error: `File "${fileName}" rejected. Type: ${file.type}, Extension: ${fileExtension}. Allowed types: images (jpg, png, gif, webp), videos (mp4, mov), documents (pdf, txt, json)`
+          },
           { status: 400, headers: getRateLimitHeaders(rateLimitResult) }
         );
       }
