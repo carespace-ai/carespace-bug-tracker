@@ -204,10 +204,17 @@ export default function Home() {
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-6">
+            {/* Light background: use light logo */}
+            <img
+              src="/brand/logo/logo-horizontal-color-light.svg"
+              alt="Carespace Logo"
+              className="h-16 w-auto block dark:hidden"
+            />
+            {/* Dark background: use dark logo */}
             <img
               src="/brand/logo/logo-horizontal-color-dark.svg"
               alt="Carespace Logo"
-              className="h-16 w-auto"
+              className="h-16 w-auto hidden dark:block"
             />
           </div>
           <h1 className="header-title text-4xl font-bold mb-2">Bug Tracker</h1>
