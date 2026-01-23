@@ -162,10 +162,26 @@ function getBrowserInfo() {
   return `${browser} ${version} on ${os}`;
 }
 
-// Helper: Convert data URL to Blob
+// Helper: Convert data URL to Blob with proper MIME type
 async function dataUrlToBlob(dataUrl) {
-  const response = await fetch(dataUrl);
-  return await response.blob();
+  // Extract MIME type from data URL (e.g., "data:image/png;base64,...")
+  const matches = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!matches) {
+    throw new Error('Invalid data URL format');
+  }
+
+  const mimeType = matches[1]; // e.g., "image/png"
+  const base64Data = matches[2];
+
+  // Convert base64 to binary
+  const binaryString = atob(base64Data);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  // Create blob with explicit MIME type
+  return new Blob([bytes], { type: mimeType });
 }
 
 // File input change handler - show file count
