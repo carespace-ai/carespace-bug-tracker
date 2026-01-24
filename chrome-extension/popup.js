@@ -84,9 +84,10 @@ function clearFormState() {
   localStorage.removeItem(FORM_STATE_KEY);
 }
 
-function saveSuccessState() {
+function saveSuccessState(bugTitle) {
   const successData = {
     success: true,
+    bugTitle: bugTitle || 'Bug report',
     timestamp: Date.now()
   };
   localStorage.setItem(SUCCESS_STATE_KEY, JSON.stringify(successData));
@@ -95,7 +96,7 @@ function saveSuccessState() {
 function checkSuccessState() {
   try {
     const savedSuccess = localStorage.getItem(SUCCESS_STATE_KEY);
-    if (!savedSuccess) return false;
+    if (!savedSuccess) return null;
 
     const successData = JSON.parse(savedSuccess);
 
@@ -103,13 +104,13 @@ function checkSuccessState() {
     const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
     if (Date.now() - successData.timestamp > twentyFourHoursInMs) {
       localStorage.removeItem(SUCCESS_STATE_KEY);
-      return false;
+      return null;
     }
 
-    return true;
+    return successData;
   } catch (error) {
     console.warn('Failed to check success state:', error);
-    return false;
+    return null;
   }
 }
 
@@ -117,7 +118,7 @@ function clearSuccessState() {
   localStorage.removeItem(SUCCESS_STATE_KEY);
 }
 
-function showSuccessScreen() {
+function showSuccessScreen(bugTitle = null) {
   const bugForm = document.getElementById('bugForm');
   const resultDiv = document.getElementById('result');
   const submitBtn = document.getElementById('submitBtn');
@@ -126,6 +127,13 @@ function showSuccessScreen() {
 
   // Hide form, show success message
   bugForm.style.display = 'none';
+
+  // Build bug title display
+  const bugTitleHtml = bugTitle
+    ? `<div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; padding: 12px; background: var(--surface-secondary); border-radius: 8px;">
+         <strong>Latest report:</strong> ${bugTitle}
+       </div>`
+    : '';
 
   resultDiv.className = 'success';
   resultDiv.innerHTML = `
@@ -137,6 +145,7 @@ function showSuccessScreen() {
       <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 24px;">
         Our team has been notified and will review it shortly
       </div>
+      ${bugTitleHtml}
       <button id="reportAnotherBtn" class="btn-primary" style="width: 100%;">
         Report Another Bug
       </button>
@@ -187,9 +196,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const loadingDiv = document.getElementById('loadingAuth');
 
   // Check if we should show success screen from previous submission
-  if (checkSuccessState()) {
+  const successState = checkSuccessState();
+  if (successState) {
     loadingDiv.classList.add('hidden');
-    showSuccessScreen();
+    showSuccessScreen(successState.bugTitle);
     return;
   }
 
@@ -451,8 +461,11 @@ document.getElementById('bugForm').addEventListener('submit', async (e) => {
     const result = await response.json();
 
     if (response.ok) {
-      // Save success state for persistence
-      saveSuccessState();
+      // Get the bug title from the form
+      const bugTitle = formData.get('title');
+
+      // Save success state for persistence (with bug title)
+      saveSuccessState(bugTitle);
 
       // Clear saved form state
       clearFormState();
@@ -461,8 +474,8 @@ document.getElementById('bugForm').addEventListener('submit', async (e) => {
       form.reset();
       document.getElementById('captureScreenshot').checked = true;
 
-      // Show success screen
-      showSuccessScreen();
+      // Show success screen with bug title
+      showSuccessScreen(bugTitle);
     } else {
       // Error
       resultDiv.className = 'error';
