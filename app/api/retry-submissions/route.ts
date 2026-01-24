@@ -48,6 +48,8 @@ async function retrySubmission(submission: {
 
   let githubUrl: string | undefined = submission.urls?.github;
   let clickupUrl: string | undefined = submission.urls?.clickup;
+  let githubIssueNumber: number | undefined;
+  let clickupTaskId: string | undefined;
 
   // Use enhanced report if available, otherwise use original bug report
   const reportToUse = submission.enhancedReport || {
@@ -63,7 +65,9 @@ async function retrySubmission(submission: {
   if (!submission.successfulServices.github && submission.errors.github) {
     retriedServices.push('github');
     try {
-      githubUrl = await createGitHubIssue(reportToUse);
+      const githubResult = await createGitHubIssue(reportToUse);
+      githubUrl = githubResult.url;
+      githubIssueNumber = githubResult.issueNumber;
       successfulServices.github = true;
       delete errors.github;
     } catch (error) {
@@ -83,11 +87,24 @@ async function retrySubmission(submission: {
         throw new Error('Cannot create ClickUp task without GitHub issue URL');
       }
 
-      clickupUrl = await createClickUpTask(reportToUse, githubIssueUrl);
+      const clickupResult = await createClickUpTask(reportToUse, githubIssueUrl);
+      clickupUrl = clickupResult.url;
+      clickupTaskId = clickupResult.taskId;
       successfulServices.clickup = true;
       delete errors.clickup;
     } catch (error) {
       errors.clickup = error instanceof Error ? error.message : 'Unknown error';
+    }
+  }
+
+  // Store sync mapping if both services succeeded
+  if (successfulServices.github && successfulServices.clickup && githubIssueNumber && clickupTaskId) {
+    try {
+      const { setMapping } = await import('@/lib/sync-storage');
+      setMapping(githubIssueNumber.toString(), clickupTaskId, 'bidirectional');
+    } catch (error) {
+      // Log error but don't fail the retry - mapping is not critical
+      console.error('Failed to store sync mapping:', error);
     }
   }
 

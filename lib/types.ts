@@ -127,3 +127,62 @@ export interface QueuedSubmission {
     clickup?: string;
   };
 }
+
+// Webhook Types - Incoming Webhooks (from GitHub/ClickUp)
+export interface GitHubWebhookEvent {
+  action?: string; // e.g., 'opened', 'closed', 'reopened', 'labeled', 'unlabeled', 'created'
+  issue?: {
+    number: number;
+    state: 'open' | 'closed';
+    labels: Array<{
+      name: string;
+    }>;
+  };
+  comment?: {
+    body: string;
+    user: {
+      login: string;
+    };
+  };
+}
+
+export interface ClickUpWebhookEvent {
+  event: string; // e.g., 'taskStatusUpdated', 'taskTagsUpdated', 'taskCommentPosted'
+  task_id: string;
+  history_items?: Array<{
+    field: string;
+    before?: string;
+    after?: string;
+  }>;
+  comment?: {
+    comment_text: string;
+    user: {
+      username: string;
+    };
+  };
+}
+
+// Webhook Types - Outgoing Webhooks (to external services)
+export type OutgoingWebhookEventType = 'bug.submitted' | 'bug.status_changed' | 'bug.resolved';
+
+export interface OutgoingWebhookPayload {
+  event: OutgoingWebhookEventType;
+  timestamp: number;
+  data: {
+    bugReport: BugReport | EnhancedBugReport;
+    githubIssueUrl?: string;
+    clickupTaskUrl?: string;
+    previousStatus?: string;
+    newStatus?: string;
+  };
+}
+
+export interface WebhookSubscription {
+  id: string;
+  url: string;
+  events: OutgoingWebhookEventType[];
+  secret: string;
+  createdAt: number;
+  lastDeliveryAt?: number;
+  failureCount?: number;
+}

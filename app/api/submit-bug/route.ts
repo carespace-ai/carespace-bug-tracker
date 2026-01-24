@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { enhanceBugReport } from '@/lib/llm-service';
 import { createGitHubIssue, uploadFilesToGitHub } from '@/lib/github-service';
 import { createClickUpTask } from '@/lib/clickup-service';
-import { BugReport } from '@/lib/types';
+import { BugReport, OutgoingWebhookPayload } from '@/lib/types';
 import { getRateLimitResult } from '@/lib/rate-limiter';
 import { bugReportSchema } from '@/lib/validation/bug-report-schema';
-import { randomUUID } from 'crypto';
+import { setMapping } from '@/lib/sync-storage';
+import { deliverWebhookToSubscribers } from '@/lib/outgoing-webhook-service';
 
 /**
  * Helper function to generate rate limit headers
@@ -51,38 +52,7 @@ function getClientIP(request: NextRequest): string {
   return '127.0.0.1'; // Fallback for local development
 }
 
-/**
- * Extracts correlation ID from request headers or generates a new one
- *
- * @param request - The incoming Next.js request
- * @returns A correlation ID for request tracing across services
- *
- * Checks for correlation ID in the following order:
- * 1. x-request-id header (standard for request tracking)
- * 2. x-correlation-id header (alternative standard)
- * 3. Generates a new UUID if neither is present
- */
-function getCorrelationId(request: NextRequest): string {
-  // Check for existing correlation ID in headers
-  const requestId = request.headers.get('x-request-id');
-  if (requestId) {
-    return requestId;
-  }
-
-  const correlationId = request.headers.get('x-correlation-id');
-  if (correlationId) {
-    return correlationId;
-  }
-
-  // Generate new UUID if no correlation ID provided
-  return randomUUID();
-}
-
 export async function POST(request: NextRequest) {
-  // Extract correlation ID for request tracing
-  const correlationId = getCorrelationId(request);
-  console.log(`[API] [reqId: ${correlationId}] Bug report submission started`);
-
   // Check rate limit first (outside try block so it's accessible in catch)
   const clientIP = getClientIP(request);
   const rateLimitResult = getRateLimitResult(clientIP);
@@ -189,6 +159,9 @@ export async function POST(request: NextRequest) {
       const isValidExtension = fileExtension && allowedExtensions.includes(fileExtension);
       const isOctetStreamWithValidExtension = file.type === 'application/octet-stream' && isValidExtension;
 
+      // Debug logging (remove in production)
+      console.log(`File validation - name: ${fileName}, type: ${file.type}, ext: ${fileExtension}, validType: ${isValidType}, validExt: ${isValidExtension}`);
+
       if (!isValidType && !isValidExtension && !isOctetStreamWithValidExtension) {
         return NextResponse.json(
           {
@@ -223,34 +196,60 @@ export async function POST(request: NextRequest) {
     const bugReport: BugReport = validationResult.data;
 
     // Step 1: Enhance bug report with LLM
-    console.log(`[API] [reqId: ${correlationId}] Enhancing bug report with LLM...`);
-    const enhancedReport = await enhanceBugReport(bugReport, correlationId);
+    console.log('Enhancing bug report with LLM...');
+    const enhancedReport = await enhanceBugReport(bugReport);
 
     // Step 2: Upload attachments to GitHub (if any)
     // Filter out empty/placeholder files before uploading
     const validAttachments = attachments.filter(file => file && file.size > 0);
 
     if (validAttachments.length > 0) {
-      console.log(`[API] [reqId: ${correlationId}] Uploading ${validAttachments.length} attachments to GitHub...`);
-      const uploadedAttachments = await uploadFilesToGitHub(validAttachments, correlationId);
+      console.log(`Uploading ${validAttachments.length} attachments to GitHub...`);
+      const uploadedAttachments = await uploadFilesToGitHub(validAttachments);
       enhancedReport.attachments = uploadedAttachments;
     }
 
     // Step 3: Create GitHub issue
-    console.log(`[API] [reqId: ${correlationId}] Creating GitHub issue...`);
-    const githubIssueUrl = await createGitHubIssue(enhancedReport, correlationId);
+    console.log('Creating GitHub issue...');
+    const githubResult = await createGitHubIssue(enhancedReport);
 
     // Step 4: Create ClickUp task
-    console.log(`[API] [reqId: ${correlationId}] Creating ClickUp task...`);
-    const clickupTaskUrl = await createClickUpTask(enhancedReport, githubIssueUrl, validAttachments, correlationId);
+    console.log('Creating ClickUp task...');
+    const clickupResult = await createClickUpTask(enhancedReport, githubResult.url);
+
+    // Step 5: Store sync mapping for bidirectional updates
+    console.log('Storing sync mapping...');
+    setMapping(
+      githubResult.issueNumber.toString(),
+      clickupResult.taskId,
+      'bidirectional'
+    );
+
+    // Step 6: Deliver outgoing webhooks to subscribed services
+    // Fire-and-forget: don't wait for webhook delivery to complete
+    const webhookPayload: OutgoingWebhookPayload = {
+      event: 'bug.submitted',
+      timestamp: Date.now(),
+      data: {
+        bugReport: enhancedReport,
+        githubIssueUrl: githubResult.url,
+        clickupTaskUrl: clickupResult.url
+      }
+    };
+
+    // Deliver webhooks asynchronously (don't block response)
+    deliverWebhookToSubscribers('bug.submitted', webhookPayload).catch(error => {
+      // Log error but don't fail the request
+      console.error('Failed to deliver webhooks:', error);
+    });
 
     return NextResponse.json(
       {
         success: true,
         message: 'Bug report submitted successfully',
         data: {
-          githubIssue: githubIssueUrl,
-          clickupTask: clickupTaskUrl,
+          githubIssue: githubResult.url,
+          clickupTask: clickupResult.url,
           enhancedReport: {
             title: enhancedReport.title,
             priority: enhancedReport.priority,
@@ -264,7 +263,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error(`[API] [reqId: ${correlationId}] Error processing bug report:`, error);
+    console.error('Error processing bug report:', error);
     return NextResponse.json(
       {
         error: 'Failed to process bug report',

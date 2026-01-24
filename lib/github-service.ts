@@ -107,7 +107,7 @@ export async function uploadFilesToGitHub(
   return Promise.all(uploadPromises);
 }
 
-export async function createGitHubIssue(enhancedReport: EnhancedBugReport, correlationId?: string): Promise<string> {
+export async function createGitHubIssue(enhancedReport: EnhancedBugReport, correlationId?: string): Promise<{ url: string; issueNumber: number }> {
   const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
 
   // Determine target repository based on AI analysis
@@ -196,7 +196,10 @@ ${enhancedReport.claudePrompt}
     });
 
     console.log(`${logPrefix} Successfully created issue in ${owner}/${targetRepo}: ${response.data.html_url}`);
-    return response.data.html_url;
+    return {
+      url: response.data.html_url,
+      issueNumber: response.data.number
+    };
   } catch (error) {
     console.error(`${logPrefix} Error creating GitHub issue in ${owner}/${targetRepo}:`, error);
     throw new Error(`Failed to create GitHub issue in ${targetRepo} repository`);
@@ -222,5 +225,109 @@ export async function addCommentToIssue(
   } catch (error) {
     console.error(`${logPrefix} Error adding comment to issue in ${owner}/${repo}:`, error);
     throw new Error(`Failed to add comment to GitHub issue in ${targetRepo} repository`);
+  }
+}
+
+/**
+ * Retrieves a GitHub issue by its number
+ * @param issueNumber - The issue number
+ * @param targetRepo - The target repository ('frontend' or 'backend')
+ * @param correlationId - Optional correlation ID for request tracing
+ * @returns GitHubIssue object containing issue details
+ */
+export async function getIssueByNumber(
+  issueNumber: number,
+  targetRepo: 'frontend' | 'backend' = 'frontend',
+  correlationId?: string
+): Promise<GitHubIssue> {
+  const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
+  const repo = REPOS[targetRepo];
+
+  try {
+    console.log(`${logPrefix} Fetching issue #${issueNumber} from ${owner}/${repo}`);
+
+    const response = await octokit.issues.get({
+      owner,
+      repo,
+      issue_number: issueNumber
+    });
+
+    const issue = response.data;
+
+    return {
+      title: issue.title,
+      body: issue.body || '',
+      labels: issue.labels.map(label => typeof label === 'string' ? label : label.name || ''),
+      assignees: issue.assignees?.map(assignee => assignee.login)
+    };
+  } catch (error) {
+    console.error(`${logPrefix} Error fetching issue #${issueNumber} from ${owner}/${repo}:`, error);
+    throw new Error(`Failed to get GitHub issue #${issueNumber} from ${targetRepo} repository`);
+  }
+}
+
+/**
+ * Updates the status (state) of a GitHub issue
+ * @param issueNumber - The issue number
+ * @param status - The new status ('open' or 'closed')
+ * @param targetRepo - The target repository ('frontend' or 'backend')
+ * @param correlationId - Optional correlation ID for request tracing
+ */
+export async function updateIssueStatus(
+  issueNumber: number,
+  status: 'open' | 'closed',
+  targetRepo: 'frontend' | 'backend' = 'frontend',
+  correlationId?: string
+): Promise<void> {
+  const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
+  const repo = REPOS[targetRepo];
+
+  try {
+    console.log(`${logPrefix} Updating issue #${issueNumber} status to '${status}' in ${owner}/${repo}`);
+
+    await octokit.issues.update({
+      owner,
+      repo,
+      issue_number: issueNumber,
+      state: status
+    });
+
+    console.log(`${logPrefix} Successfully updated issue #${issueNumber} status to '${status}' in ${owner}/${repo}`);
+  } catch (error) {
+    console.error(`${logPrefix} Error updating issue #${issueNumber} status in ${owner}/${repo}:`, error);
+    throw new Error(`Failed to update GitHub issue #${issueNumber} status in ${targetRepo} repository`);
+  }
+}
+
+/**
+ * Updates the labels of a GitHub issue
+ * @param issueNumber - The issue number
+ * @param labels - Array of label names to set on the issue
+ * @param targetRepo - The target repository ('frontend' or 'backend')
+ * @param correlationId - Optional correlation ID for request tracing
+ */
+export async function updateIssueLabels(
+  issueNumber: number,
+  labels: string[],
+  targetRepo: 'frontend' | 'backend' = 'frontend',
+  correlationId?: string
+): Promise<void> {
+  const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
+  const repo = REPOS[targetRepo];
+
+  try {
+    console.log(`${logPrefix} Updating issue #${issueNumber} labels to [${labels.join(', ')}] in ${owner}/${repo}`);
+
+    await octokit.issues.update({
+      owner,
+      repo,
+      issue_number: issueNumber,
+      labels
+    });
+
+    console.log(`${logPrefix} Successfully updated issue #${issueNumber} labels in ${owner}/${repo}`);
+  } catch (error) {
+    console.error(`${logPrefix} Error updating issue #${issueNumber} labels in ${owner}/${repo}:`, error);
+    throw new Error(`Failed to update GitHub issue #${issueNumber} labels in ${targetRepo} repository`);
   }
 }

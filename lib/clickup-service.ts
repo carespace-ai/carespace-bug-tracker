@@ -16,7 +16,7 @@ export async function createClickUpTask(
   githubIssueUrl: string,
   files?: File[],
   correlationId?: string
-): Promise<string> {
+): Promise<{ url: string; taskId: string }> {
   const logPrefix = correlationId ? `[ClickUp] [reqId: ${correlationId}]` : '[ClickUp]';
 
   // Build attachments section if files are provided
@@ -71,7 +71,10 @@ ${enhancedReport.claudePrompt}
       await uploadFilesToClickUpTask(taskId, files, correlationId);
     }
 
-    return taskUrl;
+    return {
+      url: taskUrl,
+      taskId: taskId
+    };
   } catch (error) {
     console.error(`${logPrefix} Error creating ClickUp task:`, error);
     throw new Error('Failed to create ClickUp task');
@@ -148,5 +151,97 @@ export async function updateTaskStatus(
   } catch (error) {
     console.error(`${logPrefix} Error updating ClickUp task status:`, error);
     throw new Error('Failed to update ClickUp task status');
+  }
+}
+
+/**
+ * Retrieves a ClickUp task by ID
+ * @param taskId - The ClickUp task ID
+ * @param correlationId - Optional correlation ID for logging
+ * @returns The task object
+ */
+export async function getTask(
+  taskId: string,
+  correlationId?: string
+): Promise<any> {
+  const logPrefix = correlationId ? `[ClickUp] [reqId: ${correlationId}]` : '[ClickUp]';
+
+  try {
+    const response = await axios.get(
+      `${CLICKUP_API_URL}/task/${taskId}`,
+      {
+        headers: {
+          Authorization: apiKey,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error(`${logPrefix} Error fetching ClickUp task:`, error);
+    throw new Error('Failed to fetch ClickUp task');
+  }
+}
+
+/**
+ * Adds a comment to a ClickUp task
+ * @param taskId - The ClickUp task ID
+ * @param commentText - The comment text to add
+ * @param correlationId - Optional correlation ID for logging
+ */
+export async function addCommentToTask(
+  taskId: string,
+  commentText: string,
+  correlationId?: string
+): Promise<void> {
+  const logPrefix = correlationId ? `[ClickUp] [reqId: ${correlationId}]` : '[ClickUp]';
+
+  try {
+    await axios.post(
+      `${CLICKUP_API_URL}/task/${taskId}/comment`,
+      {
+        comment_text: commentText,
+      },
+      {
+        headers: {
+          Authorization: apiKey,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+  } catch (error) {
+    console.error(`${logPrefix} Error adding comment to ClickUp task:`, error);
+    throw new Error('Failed to add comment to ClickUp task');
+  }
+}
+
+/**
+ * Updates tags on a ClickUp task
+ * @param taskId - The ClickUp task ID
+ * @param tags - Array of tag names to set on the task
+ * @param correlationId - Optional correlation ID for logging
+ */
+export async function updateTaskTags(
+  taskId: string,
+  tags: string[],
+  correlationId?: string
+): Promise<void> {
+  const logPrefix = correlationId ? `[ClickUp] [reqId: ${correlationId}]` : '[ClickUp]';
+
+  try {
+    await axios.put(
+      `${CLICKUP_API_URL}/task/${taskId}`,
+      { tags },
+      {
+        headers: {
+          Authorization: apiKey,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+  } catch (error) {
+    console.error(`${logPrefix} Error updating ClickUp task tags:`, error);
+    throw new Error('Failed to update ClickUp task tags');
   }
 }

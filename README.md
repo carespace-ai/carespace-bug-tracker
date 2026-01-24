@@ -15,12 +15,18 @@ An automated bug tracking system that collects customer bug reports via web form
   * Automatic priority scoring
 * **🔗 GitHub Integration** - Automatically creates well-formatted GitHub issues
 * **📊 ClickUp Integration** - Logs tasks in ClickUp for project management
-* **🔄 Two-Way Sync** - Bidirectional synchronization between GitHub and ClickUp:
-  * Status changes sync automatically (open/closed ↔ to do/complete)
-  * Comments sync in both directions
-  * Labels/tags sync bidirectionally
-  * Conflict resolution with timestamp-based logic
-  * Sub-1-minute sync latency
+* **🔄 Real-Time Webhook Support** - Comprehensive webhook system for integrations:
+  * **Incoming Webhooks**: Bidirectional sync between GitHub and ClickUp
+    * Status changes sync automatically (open/closed ↔ to do/complete)
+    * Comments sync in both directions
+    * Labels/tags sync bidirectionally
+    * Conflict resolution with timestamp-based logic
+    * Sub-1-minute sync latency
+  * **Outgoing Webhooks**: Notify external services (Slack, dashboards, etc.) of bug events
+    * Subscribe/unsubscribe via API endpoints
+    * Automatic retry with exponential backoff
+    * HMAC-SHA256 signature verification
+    * Support for bug.submitted, bug.status_changed, bug.resolved events
 * **🛡️ Rate Limiting Protection** - Built-in protection against spam and abuse (5 requests per 15 min per IP)
 * **⚡ Serverless Architecture** - Built with Next.js, ready for Vercel deployment
 
@@ -29,12 +35,13 @@ An automated bug tracking system that collects customer bug reports via web form
 ### Workflow
 
 
-1. **Customer submits bug** → Web form
+1. **Customer submits bug** → Web form or Chrome extension
 2. **AI Enhancement** → Claude analyzes and enriches the report
 3. **GitHub Issue** → Automatically created with enhanced details
 4. **ClickUp Task** → Logged for project tracking
-5. **Two-Way Sync** → Changes in GitHub or ClickUp automatically sync
-6. **Developer Action** → Uses provided Claude Code prompt to fix
+5. **Outgoing Webhooks** → External services notified (Slack, dashboards, etc.)
+6. **Two-Way Sync** → Changes in GitHub or ClickUp automatically sync via webhooks
+7. **Developer Action** → Uses provided Claude Code prompt to fix
 
 ### Tech Stack
 
@@ -120,7 +127,9 @@ Add these to `.env.local`:
 * `GITHUB_WEBHOOK_SECRET` - Secret for verifying GitHub webhook requests
 * `CLICKUP_WEBHOOK_SECRET` - Secret for verifying ClickUp webhook requests
 
-**📖 See [WEBHOOK_SETUP.md](docs/setup/WEBHOOK_SETUP.md) for complete webhook configuration instructions.**
+**📖 Complete webhook documentation:**
+- **[WEBHOOK_SETUP.md](docs/setup/WEBHOOK_SETUP.md)** - Full configuration guide for incoming and outgoing webhooks
+- **[PAYLOAD_SCHEMAS.md](docs/webhooks/PAYLOAD_SCHEMAS.md)** - Detailed webhook payload schemas and examples
 
 ### Running Locally
 
@@ -172,7 +181,11 @@ Open <http://localhost:3000> in your browser.
 4. Import your GitHub repository
 5. Add environment variables in the project settings (including webhook secrets)
 6. Deploy!
-7. Configure webhooks (see [WEBHOOK_SETUP.md](docs/setup/WEBHOOK_SETUP.md))
+7. **Configure webhooks** after deployment:
+   - **Incoming**: Set up GitHub and ClickUp webhooks pointing to your deployed URLs
+   - **Outgoing**: Subscribe external services to receive bug notifications
+   - See [WEBHOOK_SETUP.md](docs/setup/WEBHOOK_SETUP.md) for complete configuration guide
+   - See [PAYLOAD_SCHEMAS.md](docs/webhooks/PAYLOAD_SCHEMAS.md) for webhook payload details
 
 ## 📖 Usage
 
@@ -207,7 +220,9 @@ Open <http://localhost:3000> in your browser.
    * Add comments in either platform → Comments appear in both
    * Add labels/tags → Sync across both platforms
 
-See [WEBHOOK_SETUP.md](docs/setup/WEBHOOK_SETUP.md) for webhook configuration.
+**📚 Webhook Documentation:**
+- **[WEBHOOK_SETUP.md](docs/setup/WEBHOOK_SETUP.md)** - Configuration guide for incoming and outgoing webhooks
+- **[PAYLOAD_SCHEMAS.md](docs/webhooks/PAYLOAD_SCHEMAS.md)** - Webhook payload schemas and examples
 
 ## 🔧 Customization
 
@@ -261,6 +276,9 @@ bug-tracker/
 │   ├── README.md                # Documentation index
 │   ├── chrome-extension/        # Chrome extension docs
 │   ├── setup/                   # Setup and configuration guides
+│   │   └── WEBHOOK_SETUP.md    # Webhook configuration guide
+│   ├── webhooks/                # Webhook documentation
+│   │   └── PAYLOAD_SCHEMAS.md  # Webhook payload schemas
 │   └── testing/                 # Testing documentation
 ├── chrome-extension/            # Chrome extension source
 ├── .env.local                   # Environment variables (not in git)
@@ -401,15 +419,20 @@ To migrate from in-memory to Redis:
 ## 📝 Features Status
 
 ### ✅ Implemented
-- [x] ~~Webhook support for real-time updates~~ (disabled - see docs/setup/WEBHOOK_SETUP.md)
-- [x] ~~Two-way sync between GitHub and ClickUp~~ (disabled - see docs/setup/WEBHOOK_SETUP.md)
-- [x] ~~Chrome Extension for easy bug reporting~~ (v1.0.0 released)
-- [x] ~~Attachment support (screenshots, logs)~~ (Chrome extension)
-- [x] ~~Authentication verification~~ (Chrome extension)
-- [x] ~~AI-powered bug analysis with Claude Opus 4.5~~
-- [x] ~~Intelligent repository routing (frontend/backend)~~
-- [x] ~~Form state persistence~~ (Chrome extension)
-- [x] ~~Rate limiting protection~~
+- [x] **Webhook support for real-time updates** - See [WEBHOOK_SETUP.md](docs/setup/WEBHOOK_SETUP.md) and [PAYLOAD_SCHEMAS.md](docs/webhooks/PAYLOAD_SCHEMAS.md)
+  - [x] Incoming webhooks (GitHub ↔ ClickUp sync)
+  - [x] Outgoing webhooks (notify external services)
+  - [x] Webhook subscription management API
+  - [x] HMAC-SHA256 signature verification
+  - [x] Automatic retry with exponential backoff
+- [x] Two-way sync between GitHub and ClickUp
+- [x] Chrome Extension for easy bug reporting (v1.0.0 released)
+- [x] Attachment support (screenshots, logs) via Chrome extension
+- [x] Authentication verification via Chrome extension
+- [x] AI-powered bug analysis with Claude Opus 4.5
+- [x] Intelligent repository routing (frontend/backend)
+- [x] Form state persistence via Chrome extension
+- [x] Rate limiting protection
 
 ### 🚧 Partially Implemented
 - [ ] Auto-assignment based on category (code exists but not integrated)

@@ -10,9 +10,10 @@ This guide explains how to configure webhooks to enable two-way synchronization 
 4. [Local Development Setup](#local-development-setup)
 5. [GitHub Webhook Configuration](#github-webhook-configuration)
 6. [ClickUp Webhook Configuration](#clickup-webhook-configuration)
-7. [Production Deployment](#production-deployment)
-8. [Testing Webhooks](#testing-webhooks)
-9. [Troubleshooting](#troubleshooting)
+7. [Outgoing Webhook Configuration](#outgoing-webhook-configuration)
+8. [Production Deployment](#production-deployment)
+9. [Testing Webhooks](#testing-webhooks)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -242,6 +243,589 @@ After creating the webhook:
 2. Test by making a change to a synced task (status, tag, comment)
 3. Check the webhook delivery history in ClickUp settings
 4. Verify deliveries show `200 OK` response
+
+---
+
+## Outgoing Webhook Configuration
+
+In addition to receiving webhooks from GitHub and ClickUp, the bug tracker can send webhooks to external services (Slack, custom dashboards, monitoring tools, etc.) when bug-related events occur.
+
+### Overview
+
+Outgoing webhooks enable real-time notifications to your systems when:
+- **bug.submitted** - A new bug report is submitted
+- **bug.status_changed** - A bug's status changes (open → in progress → closed)
+- **bug.resolved** - A bug is marked as resolved (closed)
+
+External services subscribe to these events via the bug tracker's API, and the system delivers webhook payloads with signature verification for security.
+
+---
+
+### Subscription Management
+
+#### Subscribing to Webhooks
+
+External services can subscribe to webhook events using the subscription API endpoint.
+
+**Endpoint:** `POST /api/webhooks/subscribe`
+
+**Request Body:**
+```json
+{
+  "url": "https://your-service.com/webhooks/bugs",
+  "events": ["bug.submitted", "bug.status_changed", "bug.resolved"],
+  "secret": "your-secure-webhook-secret-min-16-chars"
+}
+```
+
+**Parameters:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `url` | string | Yes | HTTPS URL where webhooks will be sent (HTTP allowed for localhost) |
+| `events` | string[] | Yes | Array of event types to subscribe to |
+| `secret` | string | Yes | Secret key for signature verification (minimum 16 characters) |
+
+**Available Events:**
+- `bug.submitted` - Triggered when a new bug is submitted
+- `bug.status_changed` - Triggered when bug status changes
+- `bug.resolved` - Triggered when a bug is resolved (closed)
+
+**Example using cURL:**
+```bash
+curl -X POST https://your-bug-tracker.com/api/webhooks/subscribe \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-service.com/webhooks/bugs",
+    "events": ["bug.submitted", "bug.resolved"],
+    "secret": "super-secret-webhook-key-123456"
+  }'
+```
+
+**Success Response (201 Created):**
+```json
+{
+  "success": true,
+  "subscription": {
+    "id": "abc123def456",
+    "url": "https://your-service.com/webhooks/bugs",
+    "events": ["bug.submitted", "bug.resolved"],
+    "createdAt": 1705320000000
+  },
+  "message": "Webhook subscription created successfully"
+}
+```
+
+**Error Responses:**
+
+| Status | Error | Reason |
+|--------|-------|--------|
+| `400` | Invalid URL format | URL must be HTTPS (or HTTP for localhost) |
+| `400` | Invalid events | Events must be from allowed list |
+| `400` | Secret too short | Secret must be at least 16 characters |
+| `500` | Internal server error | Server-side issue |
+
+---
+
+#### Unsubscribing from Webhooks
+
+Remove a webhook subscription when you no longer need notifications.
+
+**Endpoint:** `DELETE /api/webhooks/unsubscribe`
+
+**Request Body:**
+```json
+{
+  "url": "https://your-service.com/webhooks/bugs"
+}
+```
+
+**Parameters:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `url` | string | Yes | The webhook URL to unsubscribe |
+
+**Example using cURL:**
+```bash
+curl -X DELETE https://your-bug-tracker.com/api/webhooks/unsubscribe \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-service.com/webhooks/bugs"
+  }'
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Webhook unsubscribed successfully"
+}
+```
+
+**Error Responses:**
+
+| Status | Error | Reason |
+|--------|-------|--------|
+| `404` | Webhook not found | No subscription exists for this URL |
+| `400` | Invalid request | Missing or invalid URL |
+| `500` | Internal server error | Server-side issue |
+
+---
+
+### Webhook Delivery
+
+#### How Delivery Works
+
+When a subscribed event occurs:
+
+1. **Event Triggered** - Bug submission, status change, or resolution occurs
+2. **Payload Created** - System creates a JSON payload with bug details
+3. **Signature Generated** - HMAC SHA-256 signature created using your secret
+4. **HTTP POST Sent** - Webhook delivered to your URL with signature header
+5. **Retry on Failure** - Up to 3 retry attempts with exponential backoff if delivery fails
+
+#### Delivery Headers
+
+All outgoing webhook requests include these headers:
+
+```
+Content-Type: application/json
+X-Webhook-Signature: sha256=<hmac-signature>
+X-Webhook-Event: <event-type>
+X-Webhook-Delivery: <unique-delivery-id>
+User-Agent: Carespace-Bug-Tracker/1.0
+```
+
+#### Retry Logic
+
+The system implements automatic retry with exponential backoff:
+
+| Attempt | Delay | Timeout |
+|---------|-------|---------|
+| 1 (initial) | 0s | 10s |
+| 2 (retry) | 1s | 10s |
+| 3 (retry) | 2s | 10s |
+| 4 (retry) | 4s | 10s |
+
+**Total retry window:** Up to 3 retries over ~7 seconds
+
+**Retry triggers:**
+- Network errors (ECONNREFUSED, ETIMEDOUT, etc.)
+- HTTP 5xx status codes (500, 502, 503, 504)
+- Request timeout (>10 seconds)
+
+**No retry for:**
+- HTTP 4xx status codes (400, 401, 404, etc.)
+- Invalid URL or DNS resolution failures
+- SSL/TLS certificate errors
+
+**Best Practice:** Your webhook endpoint should respond with `200 OK` within 10 seconds to avoid timeouts.
+
+---
+
+### Signature Verification
+
+**CRITICAL:** Always verify webhook signatures to ensure requests are authentic and come from your bug tracker instance.
+
+#### How Signatures Work
+
+The bug tracker signs each webhook request using HMAC SHA-256:
+
+1. Takes the raw JSON payload (request body)
+2. Creates HMAC hash using your webhook secret
+3. Sends signature in `X-Webhook-Signature` header as `sha256=<hex-digest>`
+
+#### Verification Implementation
+
+**Node.js / Express:**
+```javascript
+const crypto = require('crypto');
+
+app.post('/webhooks/bugs', express.raw({ type: 'application/json' }), (req, res) => {
+  const signature = req.headers['x-webhook-signature'];
+  const secret = process.env.WEBHOOK_SECRET; // Your secret from subscription
+
+  // Compute expected signature
+  const expectedSignature = 'sha256=' + crypto
+    .createHmac('sha256', secret)
+    .update(req.body) // Raw body buffer
+    .digest('hex');
+
+  // Timing-safe comparison to prevent timing attacks
+  const isValid = crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+
+  if (!isValid) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+
+  // Parse and process webhook
+  const payload = JSON.parse(req.body);
+  console.log('Received event:', payload.event);
+  console.log('Bug data:', payload.data);
+
+  res.status(200).json({ success: true });
+});
+```
+
+**Python / Flask:**
+```python
+import hmac
+import hashlib
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route('/webhooks/bugs', methods=['POST'])
+def handle_webhook():
+    signature = request.headers.get('X-Webhook-Signature')
+    secret = os.environ['WEBHOOK_SECRET']  # Your secret from subscription
+
+    # Compute expected signature
+    payload = request.get_data()
+    expected_signature = 'sha256=' + hmac.new(
+        secret.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+
+    # Timing-safe comparison
+    if not hmac.compare_digest(signature, expected_signature):
+        return jsonify({'error': 'Invalid signature'}), 401
+
+    # Parse and process webhook
+    data = request.get_json()
+    print(f"Received event: {data['event']}")
+    print(f"Bug data: {data['data']}")
+
+    return jsonify({'success': True}), 200
+```
+
+**Go:**
+```go
+package main
+
+import (
+    "crypto/hmac"
+    "crypto/sha256"
+    "encoding/hex"
+    "encoding/json"
+    "io/ioutil"
+    "net/http"
+)
+
+func handleWebhook(w http.ResponseWriter, r *http.Request) {
+    signature := r.Header.Get("X-Webhook-Signature")
+    secret := os.Getenv("WEBHOOK_SECRET") // Your secret from subscription
+
+    // Read raw body
+    body, _ := ioutil.ReadAll(r.Body)
+
+    // Compute expected signature
+    mac := hmac.New(sha256.New, []byte(secret))
+    mac.Write(body)
+    expectedSignature := "sha256=" + hex.EncodeToString(mac.Sum(nil))
+
+    // Timing-safe comparison
+    if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {
+        http.Error(w, "Invalid signature", http.StatusUnauthorized)
+        return
+    }
+
+    // Parse and process webhook
+    var payload map[string]interface{}
+    json.Unmarshal(body, &payload)
+
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+```
+
+#### Security Best Practices
+
+1. ✅ **Always verify signatures** - Never skip signature verification in production
+2. ✅ **Use timing-safe comparison** - Prevents timing attack vulnerabilities
+3. ✅ **Keep secrets secure** - Store webhook secrets in environment variables, never in code
+4. ✅ **Use HTTPS endpoints** - Protect webhook payloads in transit
+5. ✅ **Validate payload structure** - Check required fields before processing
+6. ✅ **Check delivery IDs** - Store `X-Webhook-Delivery` to detect duplicates
+7. ✅ **Respond quickly** - Return 200 OK within 10 seconds to avoid retries
+8. ✅ **Process asynchronously** - Queue long-running tasks, don't block the response
+
+---
+
+### Webhook Payload Reference
+
+For complete payload schemas and examples, see [Webhook Payload Schemas](../webhooks/PAYLOAD_SCHEMAS.md).
+
+#### Quick Reference
+
+**bug.submitted:**
+```json
+{
+  "event": "bug.submitted",
+  "timestamp": 1705320000000,
+  "data": {
+    "bugReport": { /* Complete enhanced bug report */ },
+    "githubIssueUrl": "https://github.com/...",
+    "clickupTaskUrl": "https://app.clickup.com/..."
+  }
+}
+```
+
+**bug.status_changed:**
+```json
+{
+  "event": "bug.status_changed",
+  "timestamp": 1705327200000,
+  "data": {
+    "bugReport": { /* Bug report details */ },
+    "githubIssueUrl": "https://github.com/...",
+    "clickupTaskUrl": "https://app.clickup.com/...",
+    "previousStatus": "open",
+    "newStatus": "in progress"
+  }
+}
+```
+
+**bug.resolved:**
+```json
+{
+  "event": "bug.resolved",
+  "timestamp": 1705330800000,
+  "data": {
+    "bugReport": { /* Bug report details */ },
+    "githubIssueUrl": "https://github.com/...",
+    "clickupTaskUrl": "https://app.clickup.com/...",
+    "previousStatus": "in progress",
+    "newStatus": "closed"
+  }
+}
+```
+
+---
+
+### Testing Outgoing Webhooks
+
+#### Using webhook.site
+
+Quick testing without writing code:
+
+1. Go to [https://webhook.site](https://webhook.site)
+2. Copy your unique URL
+3. Subscribe to webhooks:
+   ```bash
+   curl -X POST http://localhost:3000/api/webhooks/subscribe \
+     -H "Content-Type: application/json" \
+     -d '{
+       "url": "https://webhook.site/your-unique-id",
+       "events": ["bug.submitted"],
+       "secret": "test-secret-key-12345"
+     }'
+   ```
+4. Submit a test bug via the web form
+5. View the received payload on webhook.site
+6. Verify the `X-Webhook-Signature` header is present
+
+#### Using a Local Test Server
+
+Create a simple test receiver:
+
+**test-webhook-receiver.js:**
+```javascript
+const express = require('express');
+const crypto = require('crypto');
+
+const app = express();
+const SECRET = 'test-secret-key-12345';
+
+// Use express.raw to get raw body for signature verification
+app.use(express.raw({ type: 'application/json' }));
+
+app.post('/webhook', (req, res) => {
+  console.log('\n--- Webhook Received ---');
+  console.log('Event:', req.headers['x-webhook-event']);
+  console.log('Delivery ID:', req.headers['x-webhook-delivery']);
+
+  // Verify signature
+  const signature = req.headers['x-webhook-signature'];
+  const expectedSignature = 'sha256=' + crypto
+    .createHmac('sha256', SECRET)
+    .update(req.body)
+    .digest('hex');
+
+  console.log('Signature valid:', signature === expectedSignature);
+
+  // Parse and display payload
+  const payload = JSON.parse(req.body);
+  console.log('Payload:', JSON.stringify(payload, null, 2));
+
+  res.status(200).json({ success: true });
+});
+
+app.listen(4000, () => {
+  console.log('Test webhook receiver running on http://localhost:4000');
+  console.log('Webhook secret:', SECRET);
+});
+```
+
+**Run the test receiver:**
+```bash
+# Install Express
+npm install express
+
+# Start the receiver
+node test-webhook-receiver.js
+```
+
+**Expose with ngrok (for external testing):**
+```bash
+ngrok http 4000
+```
+
+**Subscribe to your test endpoint:**
+```bash
+# For local testing (same machine)
+curl -X POST http://localhost:3000/api/webhooks/subscribe \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "http://localhost:4000/webhook",
+    "events": ["bug.submitted", "bug.status_changed", "bug.resolved"],
+    "secret": "test-secret-key-12345"
+  }'
+
+# For external testing (with ngrok)
+curl -X POST http://localhost:3000/api/webhooks/subscribe \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-ngrok-url.ngrok.io/webhook",
+    "events": ["bug.submitted", "bug.status_changed", "bug.resolved"],
+    "secret": "test-secret-key-12345"
+  }'
+```
+
+**Trigger a test webhook:**
+1. Submit a bug via the web form at http://localhost:3000
+2. Check the test receiver console for webhook delivery
+3. Verify signature validation passes
+4. Inspect the complete payload structure
+
+---
+
+### Integration Examples
+
+#### Slack Notifications
+
+Send bug notifications to Slack using incoming webhooks:
+
+```javascript
+const express = require('express');
+const crypto = require('crypto');
+const axios = require('axios');
+
+const app = express();
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
+const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
+
+app.use(express.raw({ type: 'application/json' }));
+
+app.post('/webhooks/bugs', async (req, res) => {
+  // Verify signature
+  const signature = req.headers['x-webhook-signature'];
+  const expectedSignature = 'sha256=' + crypto
+    .createHmac('sha256', WEBHOOK_SECRET)
+    .update(req.body)
+    .digest('hex');
+
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+
+  const payload = JSON.parse(req.body);
+
+  // Format Slack message
+  let message;
+  if (payload.event === 'bug.submitted') {
+    message = {
+      text: ':bug: New Bug Reported',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `*${payload.data.bugReport.title}*\n${payload.data.bugReport.description.substring(0, 200)}...`
+          }
+        },
+        {
+          type: 'section',
+          fields: [
+            { type: 'mrkdwn', text: `*Severity:* ${payload.data.bugReport.severity}` },
+            { type: 'mrkdwn', text: `*Category:* ${payload.data.bugReport.category}` }
+          ]
+        },
+        {
+          type: 'actions',
+          elements: [
+            {
+              type: 'button',
+              text: { type: 'plain_text', text: 'View in GitHub' },
+              url: payload.data.githubIssueUrl
+            },
+            {
+              type: 'button',
+              text: { type: 'plain_text', text: 'View in ClickUp' },
+              url: payload.data.clickupTaskUrl
+            }
+          ]
+        }
+      ]
+    };
+  }
+
+  // Send to Slack
+  await axios.post(SLACK_WEBHOOK_URL, message);
+
+  res.status(200).json({ success: true });
+});
+
+app.listen(3001, () => console.log('Slack webhook bridge running on port 3001'));
+```
+
+#### Custom Dashboard Updates
+
+Update a custom dashboard with real-time bug metrics:
+
+```javascript
+app.post('/webhooks/bugs', async (req, res) => {
+  // ... signature verification ...
+
+  const payload = JSON.parse(req.body);
+
+  // Update dashboard metrics
+  if (payload.event === 'bug.submitted') {
+    await db.metrics.increment('bugs_total');
+    await db.metrics.increment(`bugs_severity_${payload.data.bugReport.severity}`);
+
+    // Trigger real-time dashboard update via WebSocket
+    io.emit('bug:new', {
+      title: payload.data.bugReport.title,
+      severity: payload.data.bugReport.severity,
+      timestamp: payload.timestamp
+    });
+  }
+
+  if (payload.event === 'bug.resolved') {
+    await db.metrics.increment('bugs_resolved');
+    const timeToResolve = payload.timestamp - payload.data.bugReport.submittedAt;
+    await db.metrics.record('resolution_time', timeToResolve);
+  }
+
+  res.status(200).json({ success: true });
+});
+```
 
 ---
 
@@ -491,6 +1075,95 @@ vercel env ls
    npm test -- webhook-validator
    ```
 
+### Outgoing Webhooks Not Being Delivered
+
+**Cause:** No active subscriptions or delivery failures
+
+**Solutions:**
+1. Verify subscription exists:
+   ```bash
+   # Check if webhook is subscribed
+   curl http://localhost:3000/api/webhooks/subscribe \
+     -H "Content-Type: application/json" \
+     -d '{"url":"https://your-endpoint.com/webhook","events":["bug.submitted"],"secret":"test"}'
+   ```
+2. Check server logs for delivery attempts and errors
+3. Verify your webhook endpoint is accessible (HTTPS required, or HTTP for localhost)
+4. Test endpoint directly with curl to ensure it responds with 200 OK
+5. Check that endpoint responds within 10 seconds (timeout)
+6. Verify endpoint URL is correct (no typos)
+
+### Outgoing Webhook Signature Verification Fails
+
+**Cause:** Incorrect signature verification implementation
+
+**Solutions:**
+1. Ensure you're using the same secret provided during subscription
+2. Verify you're reading the raw request body (not parsed JSON) for signature calculation
+3. Check header name is `X-Webhook-Signature` (case-sensitive)
+4. Verify signature format includes `sha256=` prefix
+5. Use timing-safe comparison (e.g., `crypto.timingSafeEqual()` in Node.js)
+6. Test with the example code provided in [Signature Verification](#signature-verification)
+
+**Debug signature calculation:**
+```javascript
+// Log expected vs actual signatures for debugging
+console.log('Received signature:', req.headers['x-webhook-signature']);
+console.log('Expected signature:', 'sha256=' + crypto.createHmac('sha256', secret).update(rawBody).digest('hex'));
+```
+
+### Webhook Subscription Returns 400 Invalid URL
+
+**Cause:** URL format validation failure
+
+**Solutions:**
+1. Ensure URL uses HTTPS protocol (HTTP only allowed for localhost)
+   - ✅ `https://example.com/webhook`
+   - ✅ `http://localhost:4000/webhook`
+   - ❌ `http://example.com/webhook`
+2. Verify URL is properly formatted (no spaces, valid domain)
+3. Check that URL is accessible from the bug tracker server
+4. For local testing, use ngrok to expose localhost with HTTPS
+
+### Webhook Subscription Returns 400 Secret Too Short
+
+**Cause:** Webhook secret doesn't meet minimum length requirement
+
+**Solutions:**
+1. Use a secret with at least 16 characters
+2. Generate a secure random secret:
+   ```bash
+   openssl rand -hex 32
+   ```
+3. Avoid simple or predictable secrets
+
+### Outgoing Webhooks Triggering Multiple Times
+
+**Cause:** Retry logic activated due to slow or failed responses
+
+**Solutions:**
+1. Ensure your webhook endpoint responds with 200 OK quickly (within 10 seconds)
+2. Implement idempotency using the `X-Webhook-Delivery` header:
+   ```javascript
+   const deliveryId = req.headers['x-webhook-delivery'];
+
+   // Check if already processed
+   if (await isAlreadyProcessed(deliveryId)) {
+     return res.status(200).json({ success: true, duplicate: true });
+   }
+
+   // Process webhook
+   await processWebhook(req.body);
+
+   // Mark as processed
+   await markAsProcessed(deliveryId);
+
+   res.status(200).json({ success: true });
+   ```
+3. Process webhooks asynchronously (queue the work, respond immediately)
+4. Check server logs to see if initial delivery succeeded
+5. Don't return 5xx errors unless truly necessary (triggers retries)
+
 ---
 
 ## Security Considerations
@@ -521,6 +1194,7 @@ vercel env ls
 
 ## Additional Resources
 
+- [Webhook Payload Schemas](../webhooks/PAYLOAD_SCHEMAS.md) - Complete JSON schemas for all webhook payloads
 - [GitHub Webhooks Documentation](https://docs.github.com/en/webhooks)
 - [ClickUp Webhooks Documentation](https://clickup.com/api/clickupreference/operation/CreateWebhook/)
 - [ClickUp API Documentation](https://clickup.com/api)
