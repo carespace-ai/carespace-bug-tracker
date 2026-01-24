@@ -274,6 +274,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   chrome.storage.local.remove(['selectedText', 'pageUrl', 'pageTitle']);
 });
 
+// Helper: Update submit button with progress message
+function updateSubmitProgress(message) {
+  const submitText = document.getElementById('submitText');
+  if (submitText) {
+    submitText.textContent = message;
+  }
+}
+
 // Form submission handler
 document.getElementById('bugForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -282,12 +290,18 @@ document.getElementById('bugForm').addEventListener('submit', async (e) => {
   const submitText = document.getElementById('submitText');
   const submitSpinner = document.getElementById('submitSpinner');
   const resultDiv = document.getElementById('result');
+  const bugForm = document.getElementById('bugForm');
 
   // Disable form during submission
   submitBtn.disabled = true;
-  submitText.classList.add('hidden');
+  submitText.classList.remove('hidden');
   submitSpinner.classList.remove('hidden');
   resultDiv.classList.add('hidden');
+
+  // Show initial progress
+  updateSubmitProgress('Preparing bug report...');
+
+  let submitSuccess = false;
 
   try {
     const form = e.target;
@@ -318,6 +332,7 @@ document.getElementById('bugForm').addEventListener('submit', async (e) => {
     const shouldCaptureScreenshot = document.getElementById('captureScreenshot').checked;
     if (shouldCaptureScreenshot) {
       try {
+        updateSubmitProgress('Capturing screenshot...');
         const screenshotDataUrl = await chrome.tabs.captureVisibleTab(null, {
           format: 'png',
           quality: 90
@@ -344,24 +359,34 @@ document.getElementById('bugForm').addEventListener('submit', async (e) => {
     const apiUrl = await CONFIG.getApiUrl();
 
     // Submit to API
+    updateSubmitProgress('Analyzing with AI...');
     const response = await fetch(apiUrl, {
       method: 'POST',
       body: formData
     });
 
+    updateSubmitProgress('Finalizing report...');
     const result = await response.json();
 
     if (response.ok) {
-      // Success
+      submitSuccess = true;
+
+      // Success - hide form, show success message
+      bugForm.style.display = 'none';
+
       resultDiv.className = 'success';
       resultDiv.innerHTML = `
-        <strong>✓ Bug submitted successfully!</strong>
-        <a href="${result.data.githubIssue}" target="_blank">View GitHub Issue</a>
-        <a href="${result.data.clickupTask}" target="_blank">View ClickUp Task</a>
-        <div style="margin-top: 8px; font-size: 12px;">
-          <div>Priority: ${result.data.enhancedReport.priority}/5</div>
-          <div>Repository: ${result.data.enhancedReport.targetRepo}</div>
-          <div>Labels: ${result.data.enhancedReport.labels.join(', ')}</div>
+        <div style="text-align: center; padding: 20px 0;">
+          <div style="font-size: 48px; margin-bottom: 16px;">✓</div>
+          <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
+            Your bug was reported successfully
+          </div>
+          <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 24px;">
+            Our team has been notified and will review it shortly
+          </div>
+          <button id="reportAnotherBtn" class="btn-primary" style="width: 100%;">
+            Report Another Bug
+          </button>
         </div>
       `;
       resultDiv.classList.remove('hidden');
@@ -369,12 +394,22 @@ document.getElementById('bugForm').addEventListener('submit', async (e) => {
       // Clear saved form state
       clearFormState();
 
-      // Reset form
+      // Reset form (hidden, ready for next report)
       form.reset();
       document.getElementById('captureScreenshot').checked = true;
 
-      // Auto-close after 3 seconds (optional)
-      // setTimeout(() => window.close(), 3000);
+      // Add listener for "Report Another Bug" button
+      document.getElementById('reportAnotherBtn').addEventListener('click', () => {
+        // Hide success message, show form again
+        resultDiv.classList.add('hidden');
+        bugForm.style.display = 'block';
+
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitText.textContent = 'Submit Bug Report';
+        submitText.classList.remove('hidden');
+        submitSpinner.classList.add('hidden');
+      });
     } else {
       // Error
       resultDiv.className = 'error';
