@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
 
     // Step 1: Enhance bug report with LLM
     console.log(`[API] [reqId: ${correlationId}] Enhancing bug report with LLM...`);
-    const enhancedReport = await enhanceBugReport(bugReport);
+    const enhancedReport = await enhanceBugReport(bugReport, correlationId);
 
     // Step 2: Upload attachments to GitHub (if any)
     // Filter out empty/placeholder files before uploading
