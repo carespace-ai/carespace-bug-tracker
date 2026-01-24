@@ -70,6 +70,25 @@ body {
 .header {
   text-align: center;
   margin-bottom: 16px;
+  position: relative;
+}
+
+.save-indicator {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 11px;
+  color: var(--color-success);
+  background: rgba(96, 229, 97, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.save-indicator.hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .logo {

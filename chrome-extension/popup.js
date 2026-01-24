@@ -11,6 +11,99 @@ function isCarespaceAiDomain(url) {
 // Store auth status globally
 let authStatus = null;
 
+// Form state persistence
+const FORM_STATE_KEY = 'carespace_bug_form_state';
+
+let saveIndicatorTimeout = null;
+
+function saveFormState() {
+  const formData = {
+    title: document.getElementById('title')?.value || '',
+    description: document.getElementById('description')?.value || '',
+    stepsToReproduce: document.getElementById('stepsToReproduce')?.value || '',
+    expectedBehavior: document.getElementById('expectedBehavior')?.value || '',
+    actualBehavior: document.getElementById('actualBehavior')?.value || '',
+    severity: document.getElementById('severity')?.value || '',
+    category: document.getElementById('category')?.value || '',
+    captureScreenshot: document.getElementById('captureScreenshot')?.checked ?? true,
+    timestamp: Date.now()
+  };
+
+  localStorage.setItem(FORM_STATE_KEY, JSON.stringify(formData));
+
+  // Show save indicator
+  const indicator = document.getElementById('saveIndicator');
+  if (indicator) {
+    indicator.classList.remove('hidden');
+
+    // Clear existing timeout
+    if (saveIndicatorTimeout) {
+      clearTimeout(saveIndicatorTimeout);
+    }
+
+    // Hide after 2 seconds
+    saveIndicatorTimeout = setTimeout(() => {
+      indicator.classList.add('hidden');
+    }, 2000);
+  }
+}
+
+function restoreFormState() {
+  try {
+    const savedState = localStorage.getItem(FORM_STATE_KEY);
+    if (!savedState) return false;
+
+    const formData = JSON.parse(savedState);
+
+    // Only restore if saved within last 7 days
+    const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
+    if (Date.now() - formData.timestamp > sevenDaysInMs) {
+      localStorage.removeItem(FORM_STATE_KEY);
+      return false;
+    }
+
+    // Restore form fields
+    if (formData.title) document.getElementById('title').value = formData.title;
+    if (formData.description) document.getElementById('description').value = formData.description;
+    if (formData.stepsToReproduce) document.getElementById('stepsToReproduce').value = formData.stepsToReproduce;
+    if (formData.expectedBehavior) document.getElementById('expectedBehavior').value = formData.expectedBehavior;
+    if (formData.actualBehavior) document.getElementById('actualBehavior').value = formData.actualBehavior;
+    if (formData.severity) document.getElementById('severity').value = formData.severity;
+    if (formData.category) document.getElementById('category').value = formData.category;
+    document.getElementById('captureScreenshot').checked = formData.captureScreenshot;
+
+    return true;
+  } catch (error) {
+    console.warn('Failed to restore form state:', error);
+    return false;
+  }
+}
+
+function clearFormState() {
+  localStorage.removeItem(FORM_STATE_KEY);
+}
+
+function setupFormAutoSave() {
+  const formFields = [
+    'title', 'description', 'stepsToReproduce',
+    'expectedBehavior', 'actualBehavior', 'severity', 'category'
+  ];
+
+  formFields.forEach(fieldId => {
+    const field = document.getElementById(fieldId);
+    if (field) {
+      field.addEventListener('input', saveFormState);
+      field.addEventListener('change', saveFormState);
+    }
+  });
+
+  // Also save screenshot checkbox state
+  const screenshotCheckbox = document.getElementById('captureScreenshot');
+  if (screenshotCheckbox) {
+    screenshotCheckbox.addEventListener('change', saveFormState);
+  }
+}
+
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
   const loadingDiv = document.getElementById('loadingAuth');
@@ -100,6 +193,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       emailField.value = response.userInfo.email;
       emailField.disabled = true; // Disable editing since it's from auth
     }
+
+    // Restore saved form state (if any)
+    const stateRestored = restoreFormState();
+    if (stateRestored) {
+      console.log('[Carespace Bug Reporter] Restored previous form state');
+    }
+
+    // Setup auto-save for form changes
+    setupFormAutoSave();
   } catch (error) {
     console.warn('[Carespace Bug Reporter] Could not check auth status:', error);
 
@@ -143,19 +245,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Check if popup was opened via context menu
   const contextData = await chrome.storage.local.get(['selectedText', 'pageUrl', 'pageTitle']);
 
+  // Only add context data if fields are empty (don't overwrite restored state)
   if (contextData.selectedText) {
-    // Pre-fill description with selected text
     const descriptionField = document.getElementById('description');
     const currentDesc = descriptionField.value;
-    descriptionField.value = currentDesc
-      ? `${currentDesc}\n\nSelected text: "${contextData.selectedText}"`
-      : `Selected text: "${contextData.selectedText}"`;
+    // Only add selected text if description is empty or doesn't already contain it
+    if (!currentDesc || !currentDesc.includes(contextData.selectedText)) {
+      descriptionField.value = currentDesc
+        ? `${currentDesc}\n\nSelected text: "${contextData.selectedText}"`
+        : `Selected text: "${contextData.selectedText}"`;
+      saveFormState(); // Save after adding context
+    }
   }
 
   if (contextData.pageUrl) {
-    // Add page context to steps to reproduce
     const stepsField = document.getElementById('stepsToReproduce');
-    stepsField.value = `Page: ${contextData.pageTitle || contextData.pageUrl}\nURL: ${contextData.pageUrl}\n\n`;
+    const currentSteps = stepsField.value;
+    // Only add page context if field is empty or doesn't already contain the URL
+    if (!currentSteps || !currentSteps.includes(contextData.pageUrl)) {
+      stepsField.value = currentSteps
+        ? `${currentSteps}\n\nPage: ${contextData.pageTitle || contextData.pageUrl}\nURL: ${contextData.pageUrl}`
+        : `Page: ${contextData.pageTitle || contextData.pageUrl}\nURL: ${contextData.pageUrl}\n\n`;
+      saveFormState(); // Save after adding context
+    }
   }
 
   // Clear context data after using it
@@ -253,6 +365,9 @@ document.getElementById('bugForm').addEventListener('submit', async (e) => {
         </div>
       `;
       resultDiv.classList.remove('hidden');
+
+      // Clear saved form state
+      clearFormState();
 
       // Reset form
       form.reset();
