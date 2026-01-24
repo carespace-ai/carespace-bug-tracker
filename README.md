@@ -109,7 +109,7 @@ Add these to `.env.local`:
 - `GITHUB_WEBHOOK_SECRET` - Secret for verifying GitHub webhook requests
 - `CLICKUP_WEBHOOK_SECRET` - Secret for verifying ClickUp webhook requests
 
-**📖 See [WEBHOOK_SETUP.md](./WEBHOOK_SETUP.md) for complete webhook configuration instructions.**
+**📖 See [WEBHOOK_SETUP.md](docs/setup/WEBHOOK_SETUP.md) for complete webhook configuration instructions.**
 
 ### Running Locally
 
@@ -158,7 +158,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 4. Import your GitHub repository
 5. Add environment variables in the project settings (including webhook secrets)
 6. Deploy!
-7. Configure webhooks (see [WEBHOOK_SETUP.md](./WEBHOOK_SETUP.md))
+7. Configure webhooks (see [WEBHOOK_SETUP.md](docs/setup/WEBHOOK_SETUP.md))
 
 ## 📖 Usage
 
@@ -194,7 +194,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
    - Add comments in either platform → Comments appear in both
    - Add labels/tags → Sync across both platforms
 
-See [WEBHOOK_SETUP.md](./WEBHOOK_SETUP.md) for webhook configuration.
+See [WEBHOOK_SETUP.md](docs/setup/WEBHOOK_SETUP.md) for webhook configuration.
 
 ## 🔧 Customization
 
@@ -244,10 +244,15 @@ bug-tracker/
 │   ├── e2e-test-clickup-to-github.ts   # ClickUp → GitHub testing
 │   ├── e2e-test-label-sync.ts          # Label/tag sync testing
 │   └── verify-sync-mapping.ts          # Mapping verification utility
-├── .env.local                    # Environment variables (not in git)
-├── README.md                     # This file
-├── WEBHOOK_SETUP.md              # Webhook configuration guide
-└── E2E_TESTING.md                # End-to-end testing guide
+├── docs/                         # Documentation
+│   ├── README.md                # Documentation index
+│   ├── chrome-extension/        # Chrome extension docs
+│   ├── setup/                   # Setup and configuration guides
+│   └── testing/                 # Testing documentation
+├── chrome-extension/            # Chrome extension source
+├── .env.local                   # Environment variables (not in git)
+├── README.md                    # This file
+└── CLAUDE.md                    # Project-specific instructions for Claude Code
 ```
 
 ## 🔒 Security & Rate Limiting
