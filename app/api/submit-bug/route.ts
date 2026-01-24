@@ -189,9 +189,6 @@ export async function POST(request: NextRequest) {
       const isValidExtension = fileExtension && allowedExtensions.includes(fileExtension);
       const isOctetStreamWithValidExtension = file.type === 'application/octet-stream' && isValidExtension;
 
-      // Debug logging (remove in production)
-      console.log(`File validation - name: ${fileName}, type: ${file.type}, ext: ${fileExtension}, validType: ${isValidType}, validExt: ${isValidExtension}`);
-
       if (!isValidType && !isValidExtension && !isOctetStreamWithValidExtension) {
         return NextResponse.json(
           {

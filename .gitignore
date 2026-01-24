@@ -59,3 +59,6 @@ next-env.d.ts
 .security-key
 logs/security/
 chrome-extension/build/
+
+# Bug report attachments (uploaded to GitHub, not committed)
+bug-attachments/
