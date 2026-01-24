@@ -5,6 +5,7 @@ import { createClickUpTask } from '@/lib/clickup-service';
 import { BugReport } from '@/lib/types';
 import { getRateLimitResult } from '@/lib/rate-limiter';
 import { bugReportSchema } from '@/lib/validation/bug-report-schema';
+import { randomUUID } from 'crypto';
 
 /**
  * Helper function to generate rate limit headers
@@ -50,7 +51,38 @@ function getClientIP(request: NextRequest): string {
   return '127.0.0.1'; // Fallback for local development
 }
 
+/**
+ * Extracts correlation ID from request headers or generates a new one
+ *
+ * @param request - The incoming Next.js request
+ * @returns A correlation ID for request tracing across services
+ *
+ * Checks for correlation ID in the following order:
+ * 1. x-request-id header (standard for request tracking)
+ * 2. x-correlation-id header (alternative standard)
+ * 3. Generates a new UUID if neither is present
+ */
+function getCorrelationId(request: NextRequest): string {
+  // Check for existing correlation ID in headers
+  const requestId = request.headers.get('x-request-id');
+  if (requestId) {
+    return requestId;
+  }
+
+  const correlationId = request.headers.get('x-correlation-id');
+  if (correlationId) {
+    return correlationId;
+  }
+
+  // Generate new UUID if no correlation ID provided
+  return randomUUID();
+}
+
 export async function POST(request: NextRequest) {
+  // Extract correlation ID for request tracing
+  const correlationId = getCorrelationId(request);
+  console.log(`[API] [reqId: ${correlationId}] Bug report submission started`);
+
   // Check rate limit first (outside try block so it's accessible in catch)
   const clientIP = getClientIP(request);
   const rateLimitResult = getRateLimitResult(clientIP);
@@ -157,9 +189,6 @@ export async function POST(request: NextRequest) {
       const isValidExtension = fileExtension && allowedExtensions.includes(fileExtension);
       const isOctetStreamWithValidExtension = file.type === 'application/octet-stream' && isValidExtension;
 
-      // Debug logging (remove in production)
-      console.log(`File validation - name: ${fileName}, type: ${file.type}, ext: ${fileExtension}, validType: ${isValidType}, validExt: ${isValidExtension}`);
-
       if (!isValidType && !isValidExtension && !isOctetStreamWithValidExtension) {
         return NextResponse.json(
           {
@@ -194,26 +223,26 @@ export async function POST(request: NextRequest) {
     const bugReport: BugReport = validationResult.data;
 
     // Step 1: Enhance bug report with LLM
-    console.log('Enhancing bug report with LLM...');
-    const enhancedReport = await enhanceBugReport(bugReport);
+    console.log(`[API] [reqId: ${correlationId}] Enhancing bug report with LLM...`);
+    const enhancedReport = await enhanceBugReport(bugReport, correlationId);
 
     // Step 2: Upload attachments to GitHub (if any)
     // Filter out empty/placeholder files before uploading
     const validAttachments = attachments.filter(file => file && file.size > 0);
 
     if (validAttachments.length > 0) {
-      console.log(`Uploading ${validAttachments.length} attachments to GitHub...`);
-      const uploadedAttachments = await uploadFilesToGitHub(validAttachments);
+      console.log(`[API] [reqId: ${correlationId}] Uploading ${validAttachments.length} attachments to GitHub...`);
+      const uploadedAttachments = await uploadFilesToGitHub(validAttachments, correlationId);
       enhancedReport.attachments = uploadedAttachments;
     }
 
     // Step 3: Create GitHub issue
-    console.log('Creating GitHub issue...');
-    const githubIssueUrl = await createGitHubIssue(enhancedReport);
+    console.log(`[API] [reqId: ${correlationId}] Creating GitHub issue...`);
+    const githubIssueUrl = await createGitHubIssue(enhancedReport, correlationId);
 
     // Step 4: Create ClickUp task
-    console.log('Creating ClickUp task...');
-    const clickupTaskUrl = await createClickUpTask(enhancedReport, githubIssueUrl);
+    console.log(`[API] [reqId: ${correlationId}] Creating ClickUp task...`);
+    const clickupTaskUrl = await createClickUpTask(enhancedReport, githubIssueUrl, validAttachments, correlationId);
 
     return NextResponse.json(
       {
@@ -235,7 +264,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Error processing bug report:', error);
+    console.error(`[API] [reqId: ${correlationId}] Error processing bug report:`, error);
     return NextResponse.json(
       {
         error: 'Failed to process bug report',
