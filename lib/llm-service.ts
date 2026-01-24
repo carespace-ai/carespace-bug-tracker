@@ -174,7 +174,9 @@ function filterLabels(suggestedLabels: string[], bugReport: BugReport, settings:
   return filteredLabels;
 }
 
-export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBugReport> {
+export async function enhanceBugReport(bugReport: BugReport, correlationId?: string): Promise<EnhancedBugReport> {
+  const logPrefix = correlationId ? `[LLM] [reqId: ${correlationId}]` : '[LLM]';
+
   // Sanitize the bug report to prevent prompt injection attacks
   const sanitizedBugReport = sanitizeBugReportForPrompt(bugReport);
 
@@ -200,9 +202,9 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
   prompt += codebaseContext;
 
   // Log prompt statistics for debugging
-  console.log('[AI Enhancement] Prompt length:', prompt.length, 'characters');
-  console.log('[AI Enhancement] Estimated tokens:', Math.ceil(prompt.length / 4));
-  console.log('[AI Enhancement] Attempting API call to Claude...');
+  console.log(`${logPrefix} Prompt length:`, prompt.length, 'characters');
+  console.log(`${logPrefix} Estimated tokens:`, Math.ceil(prompt.length / 4));
+  console.log(`${logPrefix} Attempting API call to Claude...`);
 
   try {
     const message = await anthropic.messages.create({
@@ -214,7 +216,7 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
       }]
     });
 
-    console.log('[AI Enhancement] API call successful');
+    console.log(`${logPrefix} API call successful`);
 
     const content = message.content[0];
     if (content.type !== 'text') {
@@ -283,14 +285,14 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
     );
 
     if (isTimeout) {
-      console.error('[AI Enhancement] Request timeout while enhancing bug report. The AI service took too long to respond. Falling back to basic enhancement.');
+      console.error(`${logPrefix} Request timeout while enhancing bug report. The AI service took too long to respond. Falling back to basic enhancement.`);
     } else {
-      console.error('[AI Enhancement] Error enhancing bug report:', error);
+      console.error(`${logPrefix} Error enhancing bug report:`, error);
       // Log additional details for debugging
       if (error instanceof Error) {
-        console.error('[AI Enhancement] Error name:', error.name);
-        console.error('[AI Enhancement] Error message:', error.message);
-        console.error('[AI Enhancement] Error stack:', error.stack);
+        console.error(`${logPrefix} Error name:`, error.name);
+        console.error(`${logPrefix} Error message:`, error.message);
+        console.error(`${logPrefix} Error stack:`, error.stack);
       }
     }
 
