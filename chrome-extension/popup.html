@@ -10,14 +10,16 @@
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <!-- Light background: use light logo -->
-      <img src="images/logo-light.svg" alt="Carespace" class="logo logo-light">
-      <!-- Dark background: use dark logo -->
-      <img src="images/logo-dark.svg" alt="Carespace" class="logo logo-dark">
+      <img src="images/logo-light.svg" alt="Carespace" class="logo">
       <h1>Bug Reporter</h1>
       <div id="saveIndicator" class="save-indicator hidden">
         <span>✓ Draft saved</span>
       </div>
+      <button id="resetBtn" class="reset-btn hidden" title="Reset form">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 8C14 11.3137 11.3137 14 8 14C4.68629 14 2 11.3137 2 8C2 4.68629 4.68629 2 8 2C9.84 2 11.44 2.86 12.48 4.2M12 2V4.8H9.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
     </div>
 
     <!-- Loading State -->

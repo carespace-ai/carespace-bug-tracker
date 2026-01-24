@@ -297,6 +297,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Setup auto-save for form changes
     setupFormAutoSave();
+
+    // Show reset button when form is visible
+    const resetBtn = document.getElementById('resetBtn');
+    if (resetBtn) {
+      resetBtn.classList.remove('hidden');
+    }
   } catch (error) {
     console.warn('[Carespace Bug Reporter] Could not check auth status:', error);
 
@@ -561,5 +567,44 @@ document.getElementById('attachments').addEventListener('change', (e) => {
     helpText.textContent = `${files.length} file(s) selected (${sizeMB} MB total)`;
   } else {
     helpText.textContent = 'Max 10MB per file (JPG, PNG, GIF, WebP, MP4, MOV, TXT, LOG, PDF, JSON)';
+  }
+});
+
+// Reset button handler - clear form and saved state
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#resetBtn')) {
+    // Confirm reset action
+    if (confirm('Are you sure you want to clear the form? Any unsaved changes will be lost.')) {
+      // Get the form
+      const bugForm = document.getElementById('bugForm');
+
+      if (bugForm) {
+        // Reset form fields
+        bugForm.reset();
+
+        // Reset screenshot checkbox to checked (default)
+        const screenshotCheckbox = document.getElementById('captureScreenshot');
+        if (screenshotCheckbox) {
+          screenshotCheckbox.checked = true;
+        }
+
+        // Clear saved form state
+        clearFormState();
+
+        // Visual feedback
+        const saveIndicator = document.getElementById('saveIndicator');
+        if (saveIndicator) {
+          saveIndicator.textContent = '✓ Form cleared';
+          saveIndicator.classList.remove('hidden');
+
+          setTimeout(() => {
+            saveIndicator.classList.add('hidden');
+            setTimeout(() => {
+              saveIndicator.textContent = '✓ Draft saved';
+            }, 300);
+          }, 2000);
+        }
+      }
+    }
   }
 });

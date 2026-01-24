@@ -76,7 +76,7 @@ body {
 .save-indicator {
   position: absolute;
   top: 0;
-  right: 0;
+  right: 40px;
   font-size: 11px;
   color: var(--color-success);
   background: rgba(96, 229, 97, 0.1);
@@ -91,29 +91,38 @@ body {
   pointer-events: none;
 }
 
-.logo {
-  height: 40px;
-  margin-bottom: 8px;
+.reset-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
-/* Show light logo on light background (default) */
-.logo-light {
-  display: block;
+.reset-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary);
 }
 
-.logo-dark {
+.reset-btn:active {
+  transform: scale(0.95);
+}
+
+.reset-btn.hidden {
   display: none;
 }
 
-/* Show dark logo on dark background */
-@media (prefers-color-scheme: dark) {
-  .logo-light {
-    display: none;
-  }
-
-  .logo-dark {
-    display: block;
-  }
+.logo {
+  height: 40px;
+  margin-bottom: 8px;
 }
 
 .header h1 {
