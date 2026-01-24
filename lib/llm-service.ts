@@ -232,13 +232,6 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
     // Filter labels to match configured taxonomy
     const filteredLabels = filterLabels(enhanced.suggestedLabels || [], bugReport, settings);
 
-    // Apply configured prompt style to the Claude prompt
-    const styledPrompt = applyPromptStyle(
-      enhanced.claudePrompt || `Fix the following issue: ${sanitizedBugReport.title}`,
-      settings.claudePromptStyle,
-      bugReport
-    );
-
     // Use AI-determined severity and category if not provided by user
     const finalSeverity = bugReport.severity || enhanced.severity || 'medium';
     const finalCategory = bugReport.category || enhanced.category || 'functionality';
@@ -249,6 +242,14 @@ export async function enhanceBugReport(bugReport: BugReport): Promise<EnhancedBu
 
     const severity: 'low' | 'medium' | 'high' | 'critical' = (validSeverities.includes(finalSeverity as any)) ? finalSeverity as any : 'medium';
     const category: 'ui' | 'functionality' | 'performance' | 'security' | 'other' = (validCategories.includes(finalCategory as any)) ? finalCategory as any : 'functionality';
+
+    // Apply configured prompt style to the Claude prompt (with severity/category set)
+    const bugReportWithMetadata = { ...bugReport, severity, category };
+    const styledPrompt = applyPromptStyle(
+      enhanced.claudePrompt || `Fix the following issue: ${sanitizedBugReport.title}`,
+      settings.claudePromptStyle,
+      bugReportWithMetadata
+    );
 
     // Determine target repository with fallback logic
     let targetRepo: 'frontend' | 'backend' = enhanced.targetRepo || 'frontend';

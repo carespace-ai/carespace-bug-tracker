@@ -125,7 +125,16 @@ export async function createGitHubIssue(enhancedReport: EnhancedBugReport, corre
 
   const issueBody = `## 🐛 Bug Report
 
-### Description
+### Original User Report
+> **${enhancedReport.title}**
+>
+> ${enhancedReport.description}
+${enhancedReport.expectedBehavior ? `> \n> **Expected:** ${enhancedReport.expectedBehavior}` : ''}
+${enhancedReport.actualBehavior ? `> \n> **Actual:** ${enhancedReport.actualBehavior}` : ''}
+
+---
+
+### AI-Enhanced Description
 ${enhancedReport.enhancedDescription}
 
 ### Root Cause Hypothesis
@@ -177,6 +186,10 @@ ${enhancedReport.claudePrompt}
 ---
 *This issue was automatically created from a customer bug report, enhanced with AI analysis, and routed to the ${enhancedReport.targetRepo} repository.*`;
 
+  // Get assignee from environment variable (optional)
+  const assignee = process.env.GITHUB_ASSIGNEE;
+  const assignees = assignee ? [assignee] : undefined;
+
   try {
     const response = await octokit.issues.create({
       owner,
@@ -184,9 +197,13 @@ ${enhancedReport.claudePrompt}
       title: enhancedReport.title,
       body: issueBody,
       labels: enhancedReport.suggestedLabels,
+      assignees,
     });
 
     console.log(`${logPrefix} Successfully created issue in ${owner}/${targetRepo}: ${response.data.html_url}`);
+    if (assignees) {
+      console.log(`${logPrefix} Assigned to: ${assignees.join(', ')}`);
+    }
     return response.data.html_url;
   } catch (error) {
     console.error(`${logPrefix} Error creating GitHub issue in ${owner}/${targetRepo}:`, error);
