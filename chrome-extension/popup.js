@@ -13,6 +13,7 @@ let authStatus = null;
 
 // Form state persistence
 const FORM_STATE_KEY = 'carespace_bug_form_state';
+const SUCCESS_STATE_KEY = 'carespace_bug_success_state';
 
 let saveIndicatorTimeout = null;
 
@@ -83,6 +84,83 @@ function clearFormState() {
   localStorage.removeItem(FORM_STATE_KEY);
 }
 
+function saveSuccessState() {
+  const successData = {
+    success: true,
+    timestamp: Date.now()
+  };
+  localStorage.setItem(SUCCESS_STATE_KEY, JSON.stringify(successData));
+}
+
+function checkSuccessState() {
+  try {
+    const savedSuccess = localStorage.getItem(SUCCESS_STATE_KEY);
+    if (!savedSuccess) return false;
+
+    const successData = JSON.parse(savedSuccess);
+
+    // Only restore if success was within last 24 hours
+    const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
+    if (Date.now() - successData.timestamp > twentyFourHoursInMs) {
+      localStorage.removeItem(SUCCESS_STATE_KEY);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.warn('Failed to check success state:', error);
+    return false;
+  }
+}
+
+function clearSuccessState() {
+  localStorage.removeItem(SUCCESS_STATE_KEY);
+}
+
+function showSuccessScreen() {
+  const bugForm = document.getElementById('bugForm');
+  const resultDiv = document.getElementById('result');
+  const submitBtn = document.getElementById('submitBtn');
+  const submitText = document.getElementById('submitText');
+  const submitSpinner = document.getElementById('submitSpinner');
+
+  // Hide form, show success message
+  bugForm.style.display = 'none';
+
+  resultDiv.className = 'success';
+  resultDiv.innerHTML = `
+    <div style="text-align: center; padding: 20px 0;">
+      <div style="font-size: 48px; margin-bottom: 16px;">✓</div>
+      <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
+        Your bug was reported successfully
+      </div>
+      <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 24px;">
+        Our team has been notified and will review it shortly
+      </div>
+      <button id="reportAnotherBtn" class="btn-primary" style="width: 100%;">
+        Report Another Bug
+      </button>
+    </div>
+  `;
+  resultDiv.classList.remove('hidden');
+
+  // Add listener for "Report Another Bug" button
+  document.getElementById('reportAnotherBtn').addEventListener('click', () => {
+    // Clear success state
+    clearSuccessState();
+
+    // Hide success message, show form again
+    resultDiv.classList.add('hidden');
+    bugForm.style.display = 'block';
+
+    // Re-enable submit button
+    submitBtn.disabled = false;
+    submitText.textContent = 'Submit Bug Report';
+    submitText.classList.remove('hidden');
+    submitSpinner.classList.add('hidden');
+  });
+}
+
 function setupFormAutoSave() {
   const formFields = [
     'title', 'description', 'stepsToReproduce',
@@ -107,6 +185,13 @@ function setupFormAutoSave() {
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
   const loadingDiv = document.getElementById('loadingAuth');
+
+  // Check if we should show success screen from previous submission
+  if (checkSuccessState()) {
+    loadingDiv.classList.add('hidden');
+    showSuccessScreen();
+    return;
+  }
 
   // Get current tab to check domain
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -290,7 +375,6 @@ document.getElementById('bugForm').addEventListener('submit', async (e) => {
   const submitText = document.getElementById('submitText');
   const submitSpinner = document.getElementById('submitSpinner');
   const resultDiv = document.getElementById('result');
-  const bugForm = document.getElementById('bugForm');
 
   // Disable form during submission
   submitBtn.disabled = true;
@@ -300,8 +384,6 @@ document.getElementById('bugForm').addEventListener('submit', async (e) => {
 
   // Show initial progress
   updateSubmitProgress('Preparing bug report...');
-
-  let submitSuccess = false;
 
   try {
     const form = e.target;
@@ -369,27 +451,8 @@ document.getElementById('bugForm').addEventListener('submit', async (e) => {
     const result = await response.json();
 
     if (response.ok) {
-      submitSuccess = true;
-
-      // Success - hide form, show success message
-      bugForm.style.display = 'none';
-
-      resultDiv.className = 'success';
-      resultDiv.innerHTML = `
-        <div style="text-align: center; padding: 20px 0;">
-          <div style="font-size: 48px; margin-bottom: 16px;">✓</div>
-          <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
-            Your bug was reported successfully
-          </div>
-          <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 24px;">
-            Our team has been notified and will review it shortly
-          </div>
-          <button id="reportAnotherBtn" class="btn-primary" style="width: 100%;">
-            Report Another Bug
-          </button>
-        </div>
-      `;
-      resultDiv.classList.remove('hidden');
+      // Save success state for persistence
+      saveSuccessState();
 
       // Clear saved form state
       clearFormState();
@@ -398,18 +461,8 @@ document.getElementById('bugForm').addEventListener('submit', async (e) => {
       form.reset();
       document.getElementById('captureScreenshot').checked = true;
 
-      // Add listener for "Report Another Bug" button
-      document.getElementById('reportAnotherBtn').addEventListener('click', () => {
-        // Hide success message, show form again
-        resultDiv.classList.add('hidden');
-        bugForm.style.display = 'block';
-
-        // Re-enable submit button
-        submitBtn.disabled = false;
-        submitText.textContent = 'Submit Bug Report';
-        submitText.classList.remove('hidden');
-        submitSpinner.classList.add('hidden');
-      });
+      // Show success screen
+      showSuccessScreen();
     } else {
       // Error
       resultDiv.className = 'error';
