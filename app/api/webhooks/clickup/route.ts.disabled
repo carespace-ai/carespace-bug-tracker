@@ -66,14 +66,14 @@ export async function POST(request: NextRequest) {
       // Handle status change
       // Extract the new status from history_items
       const statusChange = payload.history_items?.find(item => item.field === 'status');
-      if (statusChange) {
+      if (statusChange && statusChange.after) {
         const newStatus = statusChange.after;
         syncResult = await syncStatusToGitHub(taskId, newStatus, eventTimestamp);
       }
     } else if (eventType === 'taskTagsUpdated') {
       // Handle tags change - fetch current task state to get all tags
       const taskData = await getTask(taskId);
-      const tags = taskData.tags.map(tag => tag.name);
+      const tags = taskData.tags.map((tag: { name: string }) => tag.name);
       syncResult = await syncLabelsToGitHub(taskId, tags, eventTimestamp);
     } else if (eventType === 'taskCommentPosted') {
       // Handle new comment
