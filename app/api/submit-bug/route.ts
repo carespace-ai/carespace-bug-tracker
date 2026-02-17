@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { enhanceBugReport } from '@/lib/llm-service';
-import { createGitHubIssue, uploadFilesToGitHub } from '@/lib/github-service';
+import { createGitHubIssue } from '@/lib/github-service';
+import { uploadFilesToAzureBlob } from '@/lib/azure-blob-service';
 import { createClickUpTask } from '@/lib/clickup-service';
 import { BugReport, OutgoingWebhookPayload } from '@/lib/types';
 import { getRateLimitResult } from '@/lib/rate-limiter';
@@ -204,8 +205,8 @@ export async function POST(request: NextRequest) {
     const validAttachments = attachments.filter(file => file && file.size > 0);
 
     if (validAttachments.length > 0) {
-      console.log(`Uploading ${validAttachments.length} attachments to GitHub...`);
-      const uploadedAttachments = await uploadFilesToGitHub(validAttachments);
+      console.log(`Uploading ${validAttachments.length} attachments to Azure Blob Storage...`);
+      const uploadedAttachments = await uploadFilesToAzureBlob(validAttachments);
       enhancedReport.attachments = uploadedAttachments;
     }
 

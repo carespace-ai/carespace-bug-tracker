@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://api.anthropic.com https://api.github.com https://api.clickup.com",
+              "connect-src 'self' https://api.anthropic.com https://api.github.com https://api.clickup.com https://carespacbugattach.blob.core.windows.net",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
