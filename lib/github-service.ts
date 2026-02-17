@@ -10,8 +10,8 @@ const defaultRepo = process.env.GITHUB_REPO || '';
 
 // Repository configuration
 const REPOS = {
-  frontend: process.env.GITHUB_REPO_FRONTEND || 'carespace-frontend',
-  backend: process.env.GITHUB_REPO_BACKEND || 'carespace-backend',
+  frontend: process.env.GITHUB_REPO_FRONTEND || 'carespace-ui',
+  backend: process.env.GITHUB_REPO_BACKEND || 'carespace-admin',
   attachments: defaultRepo || 'carespace-bug-tracker' // Keep using bug tracker repo for attachments
 };
 
