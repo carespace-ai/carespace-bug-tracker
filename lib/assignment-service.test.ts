@@ -34,40 +34,33 @@ const mockConfig = {
     ui: {
       description: 'User interface bugs',
       githubAssignees: ['frontend-dev'],
-      clickupAssignees: ['12345678'],
       enabled: true,
     },
     functionality: {
       description: 'Functional bugs',
       githubAssignees: ['backend-dev'],
-      clickupAssignees: ['23456789'],
       enabled: true,
     },
     security: {
       description: 'Security vulnerabilities',
       githubAssignees: ['security-team'],
-      clickupAssignees: ['45678901'],
       enabled: true,
     },
     other: {
       description: 'Uncategorized bugs',
       githubAssignees: [],
-      clickupAssignees: [],
       enabled: false,
     },
   },
   teams: {
     frontend: {
       githubUsers: ['frontend-dev'],
-      clickupUsers: ['12345678'],
     },
     backend: {
       githubUsers: ['backend-dev'],
-      clickupUsers: ['23456789'],
     },
     security: {
       githubUsers: ['security-team'],
-      clickupUsers: ['45678901'],
     },
   },
   aiSuggestionPrompt: {
@@ -116,7 +109,6 @@ describe('assignment-service', () => {
 
       expect(result).toEqual({
         githubAssignees: ['frontend-dev'],
-        clickupAssignees: ['12345678'],
         assignmentMethod: 'config',
       });
     });
@@ -140,7 +132,6 @@ describe('assignment-service', () => {
 
       expect(result).toEqual({
         githubAssignees: ['security-team'],
-        clickupAssignees: ['45678901'],
         assignmentMethod: 'config',
       });
     });
@@ -164,7 +155,6 @@ describe('assignment-service', () => {
 
       expect(result).toEqual({
         githubAssignees: [],
-        clickupAssignees: [],
         assignmentMethod: 'none',
       });
     });
@@ -187,7 +177,6 @@ describe('assignment-service', () => {
       const result = await freshDetermineAssignees(enhancedReport, false);
 
       expect(result.githubAssignees).toEqual([]);
-      expect(result.clickupAssignees).toEqual([]);
     });
   });
 
@@ -219,7 +208,6 @@ describe('assignment-service', () => {
       expect(mockCreate).toHaveBeenCalledTimes(1);
       expect(result).toEqual({
         githubAssignees: ['backend-dev'],
-        clickupAssignees: ['23456789'],
         assignmentMethod: 'ai',
       });
     });
@@ -251,7 +239,6 @@ describe('assignment-service', () => {
 
       expect(result).toEqual({
         githubAssignees: [],
-        clickupAssignees: [],
         assignmentMethod: 'none',
       });
     });
@@ -298,7 +285,6 @@ describe('assignment-service', () => {
 
       expect(result).toEqual({
         githubAssignees: [],
-        clickupAssignees: [],
         assignmentMethod: 'none',
       });
     });
@@ -336,7 +322,6 @@ describe('assignment-service', () => {
 
       expect(result).toEqual({
         githubAssignees: [],
-        clickupAssignees: [],
         assignmentMethod: 'none',
       });
     });
@@ -367,7 +352,6 @@ describe('assignment-service', () => {
 
       expect(result).toEqual({
         githubAssignees: ['frontend-dev'],
-        clickupAssignees: ['12345678'],
         assignmentMethod: 'ai',
       });
     });
@@ -398,7 +382,6 @@ describe('assignment-service', () => {
 
       expect(result).toEqual({
         githubAssignees: ['frontend-dev'],
-        clickupAssignees: ['12345678'],
         assignmentMethod: 'config',
       });
     });
@@ -429,7 +412,6 @@ describe('assignment-service', () => {
 
       expect(result).toEqual({
         githubAssignees: ['backend-dev'],
-        clickupAssignees: ['23456789'],
         assignmentMethod: 'ai',
       });
     });
@@ -455,7 +437,6 @@ describe('assignment-service', () => {
 
       expect(result).toEqual({
         githubAssignees: [],
-        clickupAssignees: [],
         assignmentMethod: 'none',
       });
     });
@@ -484,7 +465,6 @@ describe('assignment-service', () => {
       // When no assignment method works, it returns empty assignees
       expect(result).toEqual({
         githubAssignees: [],
-        clickupAssignees: [],
         assignmentMethod: 'none',
       });
     });

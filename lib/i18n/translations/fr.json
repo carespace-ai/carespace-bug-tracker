@@ -75,18 +75,15 @@
   },
   "results": {
     "githubIssue": "Ticket GitHub :",
-    "clickupTask": "Tâche ClickUp :",
     "priority": "Priorité :",
     "labels": "Étiquettes :",
-    "viewIssue": "Voir le Ticket",
-    "viewTask": "Voir la Tâche"
+    "viewIssue": "Voir le Ticket"
   },
   "footer": {
     "text": "Votre rapport de bug sera automatiquement :",
     "items": {
       "enhanced": "✨ Enrichi avec une analyse IA",
       "github": "📝 Créé comme un ticket GitHub",
-      "clickup": "📊 Enregistré dans ClickUp",
       "claude": "🤖 Préparé avec des invites Claude Code"
     }
   }

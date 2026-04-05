@@ -38,17 +38,6 @@ export default function SubmitResult({ result }: SubmitResultProps) {
             </a>
           </p>
           <p className="text-green-700">
-            <strong>ClickUp Task:</strong>{' '}
-            <a
-              href={result.data.clickupTask}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-green-900"
-            >
-              View Task
-            </a>
-          </p>
-          <p className="text-green-700">
             <strong>Priority:</strong> {result.data.enhancedReport.priority}/5
           </p>
           <p className="text-green-700">

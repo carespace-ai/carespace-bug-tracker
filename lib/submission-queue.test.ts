@@ -39,7 +39,7 @@ describe('Submission Queue', () => {
         mockBugReport,
         mockEnhancedReport,
         { github: 'GitHub error' },
-        { clickup: true }
+        { github: true }
       );
 
       expect(id).toBeDefined();
@@ -52,12 +52,12 @@ describe('Submission Queue', () => {
         mockBugReport,
         undefined,
         { github: 'GitHub error' },
-        { clickup: true }
+        { github: true }
       );
 
       const submission = getQueuedSubmission(id);
       expect(submission?.status).toBe('partial');
-      expect(submission?.successfulServices.clickup).toBe(true);
+      expect(submission?.successfulServices.github).toBe(true);
       expect(submission?.errors.github).toBe('GitHub error');
     });
 
@@ -65,7 +65,7 @@ describe('Submission Queue', () => {
       const id = addToQueue(
         mockBugReport,
         undefined,
-        { github: 'GitHub error', clickup: 'ClickUp error' },
+        { github: 'GitHub error' },
         {}
       );
 
@@ -132,7 +132,7 @@ describe('Submission Queue', () => {
   describe('getAllQueuedSubmissions', () => {
     it('should return all submissions when no filter provided', () => {
       addToQueue(mockBugReport, undefined, { github: 'Error' }, {});
-      addToQueue(mockBugReport, undefined, { clickup: 'Error' }, { github: true });
+      addToQueue(mockBugReport, undefined, { github: 'Error' }, { github: true });
 
       const submissions = getAllQueuedSubmissions();
       expect(submissions).toHaveLength(2);
@@ -140,7 +140,7 @@ describe('Submission Queue', () => {
 
     it('should filter by status when provided', () => {
       addToQueue(mockBugReport, undefined, { github: 'Error' }, {});
-      addToQueue(mockBugReport, undefined, { clickup: 'Error' }, { github: true });
+      addToQueue(mockBugReport, undefined, { github: 'Error' }, { github: true });
 
       const pending = getAllQueuedSubmissions('pending');
       const partial = getAllQueuedSubmissions('partial');
@@ -158,7 +158,7 @@ describe('Submission Queue', () => {
   describe('getRetryableSubmissions', () => {
     it('should return submissions with status pending or partial', () => {
       const id1 = addToQueue(mockBugReport, undefined, { github: 'Error' }, {});
-      const id2 = addToQueue(mockBugReport, undefined, { clickup: 'Error' }, { github: true });
+      const id2 = addToQueue(mockBugReport, undefined, { github: 'Error' }, { github: true });
       const id3 = addToQueue(mockBugReport, undefined, { anthropic: 'Error' }, {});
 
       // Mark one as failed
@@ -172,7 +172,7 @@ describe('Submission Queue', () => {
 
     it('should exclude submissions that exceeded retry count', () => {
       const id1 = addToQueue(mockBugReport, undefined, { github: 'Error' }, {});
-      const id2 = addToQueue(mockBugReport, undefined, { clickup: 'Error' }, {});
+      const id2 = addToQueue(mockBugReport, undefined, { github: 'Error' }, {});
 
       // Increment retry count beyond max
       incrementRetryCount(id1);
@@ -208,11 +208,10 @@ describe('Submission Queue', () => {
     it('should update errors', () => {
       const id = addToQueue(mockBugReport, undefined, { github: 'Error' }, {});
 
-      updateSubmission(id, { errors: { clickup: 'New error' } });
+      updateSubmission(id, { errors: { github: 'New error' } });
 
       const submission = getQueuedSubmission(id);
-      expect(submission?.errors.github).toBe('Error');
-      expect(submission?.errors.clickup).toBe('New error');
+      expect(submission?.errors.github).toBe('New error');
     });
 
     it('should update successfulServices', () => {
@@ -308,7 +307,7 @@ describe('Submission Queue', () => {
 
     it('should return correct size', () => {
       addToQueue(mockBugReport, undefined, { github: 'Error' }, {});
-      addToQueue(mockBugReport, undefined, { clickup: 'Error' }, {});
+      addToQueue(mockBugReport, undefined, { github: 'Error' }, {});
       addToQueue(mockBugReport, undefined, { anthropic: 'Error' }, {});
 
       expect(getQueueSize()).toBe(3);
@@ -316,7 +315,7 @@ describe('Submission Queue', () => {
 
     it('should update after removal', () => {
       const id1 = addToQueue(mockBugReport, undefined, { github: 'Error' }, {});
-      const id2 = addToQueue(mockBugReport, undefined, { clickup: 'Error' }, {});
+      const id2 = addToQueue(mockBugReport, undefined, { github: 'Error' }, {});
 
       expect(getQueueSize()).toBe(2);
 
@@ -331,7 +330,7 @@ describe('Submission Queue', () => {
   describe('clearQueue', () => {
     it('should remove all submissions from the queue', () => {
       addToQueue(mockBugReport, undefined, { github: 'Error' }, {});
-      addToQueue(mockBugReport, undefined, { clickup: 'Error' }, {});
+      addToQueue(mockBugReport, undefined, { github: 'Error' }, {});
       addToQueue(mockBugReport, undefined, { anthropic: 'Error' }, {});
 
       expect(getQueueSize()).toBe(3);
@@ -346,7 +345,7 @@ describe('Submission Queue', () => {
   describe('getQueueStats', () => {
     it('should return correct statistics', () => {
       const id1 = addToQueue(mockBugReport, undefined, { github: 'Error' }, {});
-      const id2 = addToQueue(mockBugReport, undefined, { clickup: 'Error' }, { github: true });
+      const id2 = addToQueue(mockBugReport, undefined, { github: 'Error' }, { github: true });
       const id3 = addToQueue(mockBugReport, undefined, { anthropic: 'Error' }, {});
 
       updateSubmission(id3, { status: 'failed' });
@@ -377,7 +376,7 @@ describe('Submission Queue', () => {
   describe('Queue management', () => {
     it('should handle multiple submissions independently', () => {
       const id1 = addToQueue(mockBugReport, undefined, { github: 'Error 1' }, {});
-      const id2 = addToQueue(mockBugReport, undefined, { clickup: 'Error 2' }, {});
+      const id2 = addToQueue(mockBugReport, undefined, { github: 'Error 2' }, {});
 
       incrementRetryCount(id1);
       updateSubmission(id2, { status: 'failed' });
@@ -419,7 +418,7 @@ describe('Submission Queue', () => {
       const id = addToQueue(
         customBugReport,
         undefined,
-        { github: 'GitHub error', clickup: 'ClickUp error' },
+        { github: 'GitHub error' },
         { anthropic: true }
       );
 
@@ -427,7 +426,7 @@ describe('Submission Queue', () => {
 
       expect(submission?.bugReport).toEqual(customBugReport);
       expect(submission?.errors.github).toBe('GitHub error');
-      expect(submission?.errors.clickup).toBe('ClickUp error');
+      expect(submission?.errors.github).toBe('GitHub error');
       expect(submission?.successfulServices.anthropic).toBe(true);
     });
   });

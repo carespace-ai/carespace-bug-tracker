@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { enhanceBugReport } from '@/lib/llm-service';
 import { createGitHubIssue } from '@/lib/github-service';
 import { uploadFilesToAzureBlob } from '@/lib/azure-blob-service';
-import { createClickUpTask } from '@/lib/clickup-service';
 import { BugReport, OutgoingWebhookPayload } from '@/lib/types';
 import { getRateLimitResult } from '@/lib/rate-limiter';
 import { bugReportSchema } from '@/lib/validation/bug-report-schema';
-import { setMapping } from '@/lib/sync-storage';
 import { deliverWebhookToSubscribers } from '@/lib/outgoing-webhook-service';
+import { logger, generateCorrelationId, withTiming, LogContext } from '@/lib/logger';
 
 /**
  * Helper function to generate rate limit headers
@@ -23,38 +22,23 @@ function getRateLimitHeaders(rateLimitResult: { remaining: number; resetTime: nu
 /**
  * Extracts client IP address from request headers
  *
- * @param request - The incoming Next.js request
- * @returns The client's IP address
- *
  * @important GDPR/Privacy Compliance
- * IP addresses are considered Personally Identifiable Information (PII) under GDPR
- * and other privacy regulations. They MUST NOT be logged or exposed in error messages.
- * Use IP addresses only for:
- * - Rate limiting (processed in-memory, not persisted)
- * - Security monitoring (with proper data retention policies)
- *
- * Never include IP addresses in:
- * - Console logs or debug statements
- * - Error messages sent to clients
- * - External service payloads (GitHub issues, ClickUp tasks, etc.)
- * - Any persistent storage without explicit user consent and data protection measures
+ * IP addresses are PII under GDPR. They MUST NOT be logged or exposed in error messages.
+ * Use only for rate limiting (in-memory) and security monitoring.
  */
 function getClientIP(request: NextRequest): string {
   const forwardedFor = request.headers.get('x-forwarded-for');
   if (forwardedFor) {
     return forwardedFor.split(',')[0].trim();
   }
-
   const realIP = request.headers.get('x-real-ip');
   if (realIP) {
     return realIP;
   }
-
-  return '127.0.0.1'; // Fallback for local development
+  return '127.0.0.1';
 }
 
 export async function POST(request: NextRequest) {
-  // Check rate limit first (outside try block so it's accessible in catch)
   const clientIP = getClientIP(request);
   const rateLimitResult = getRateLimitResult(clientIP);
 
@@ -77,12 +61,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const correlationId = generateCorrelationId();
+  const ctx: LogContext = { correlationId, service: 'submit-bug' };
+
   try {
-    // Parse FormData instead of JSON
     const formData = await request.formData();
 
-    // Extract form fields from FormData
-    // Helper to convert empty strings to undefined for optional fields
     const getFormValue = (key: string): string | undefined => {
       const value = formData.get(key);
       if (!value || value === '') return undefined;
@@ -102,33 +86,19 @@ export async function POST(request: NextRequest) {
       browserInfo: getFormValue('browserInfo'),
     };
 
-    // Extract file attachments
     const attachments = formData.getAll('attachments') as File[];
 
     // Validate file attachments
     const maxFileCount = 5;
     const maxFileSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = [
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-      'image/bmp',
-      'video/mp4',
-      'video/quicktime',
-      'text/plain',
-      'application/pdf',
-      'application/json'
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp',
+      'video/mp4', 'video/quicktime',
+      'text/plain', 'application/pdf', 'application/json'
     ];
-
-    // Allowed file extensions (fallback for when MIME type is application/octet-stream)
     const allowedExtensions = [
       '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp',
-      '.mp4', '.mov',
-      '.txt', '.log',
-      '.pdf',
-      '.json'
+      '.mp4', '.mov', '.txt', '.log', '.pdf', '.json'
     ];
 
     if (attachments.length > maxFileCount) {
@@ -139,10 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     for (const file of attachments) {
-      // Skip validation for empty/placeholder files
-      if (!file || file.size === 0) {
-        continue;
-      }
+      if (!file || file.size === 0) continue;
 
       if (file.size > maxFileSize) {
         return NextResponse.json(
@@ -151,17 +118,12 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Validate by MIME type or file extension
       const fileName = file.name || 'unknown';
       const lastDotIndex = fileName.lastIndexOf('.');
       const fileExtension = lastDotIndex !== -1 ? fileName.toLowerCase().substring(lastDotIndex) : '';
-
       const isValidType = allowedTypes.includes(file.type);
       const isValidExtension = fileExtension && allowedExtensions.includes(fileExtension);
       const isOctetStreamWithValidExtension = file.type === 'application/octet-stream' && isValidExtension;
-
-      // Debug logging (remove in production)
-      console.log(`File validation - name: ${fileName}, type: ${file.type}, ext: ${fileExtension}, validType: ${isValidType}, validExt: ${isValidExtension}`);
 
       if (!isValidType && !isValidExtension && !isOctetStreamWithValidExtension) {
         return NextResponse.json(
@@ -176,7 +138,6 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validationResult = bugReportSchema.safeParse(body);
     if (!validationResult.success) {
-      // Format validation errors for better readability
       const errorMessages = validationResult.error.issues.map(issue =>
         `${issue.path.join('.')}: ${issue.message}`
       ).join(', ');
@@ -187,70 +148,81 @@ export async function POST(request: NextRequest) {
           details: errorMessages,
           validationErrors: validationResult.error.issues
         },
-        {
-          status: 400,
-          headers: getRateLimitHeaders(rateLimitResult)
-        }
+        { status: 400, headers: getRateLimitHeaders(rateLimitResult) }
       );
     }
 
     const bugReport: BugReport = validationResult.data;
 
-    // Step 1: Enhance bug report with LLM
-    console.log('Enhancing bug report with LLM...');
-    const enhancedReport = await enhanceBugReport(bugReport);
+    logger.info('Processing bug report submission', ctx, {
+      title: bugReport.title,
+      severity: bugReport.severity,
+      category: bugReport.category,
+      hasAttachments: attachments.length > 0,
+    });
 
-    // Step 2: Upload attachments to GitHub (if any)
-    // Filter out empty/placeholder files before uploading
+    // Step 1: Enhance bug report with LLM
+    const enhancedReport = await withTiming('LLM enhancement', { ...ctx, operation: 'enhance' }, () =>
+      enhanceBugReport(bugReport)
+    );
+
+    logger.info('LLM enhancement complete', ctx, {
+      targetRepo: enhancedReport.targetRepo,
+      priority: enhancedReport.priority,
+      labels: enhancedReport.suggestedLabels,
+    });
+
+    // Step 2: Upload attachments to Azure Blob Storage (if any)
     const validAttachments = attachments.filter(file => file && file.size > 0);
 
     if (validAttachments.length > 0) {
-      console.log(`Uploading ${validAttachments.length} attachments to Azure Blob Storage...`);
-      const uploadedAttachments = await uploadFilesToAzureBlob(validAttachments);
+      const uploadedAttachments = await withTiming(
+        'Azure Blob upload',
+        { ...ctx, operation: 'upload-attachments' },
+        () => uploadFilesToAzureBlob(validAttachments)
+      );
       enhancedReport.attachments = uploadedAttachments;
+      logger.info('Attachments uploaded', ctx, { count: uploadedAttachments.length });
     }
 
     // Step 3: Create GitHub issue
-    console.log('Creating GitHub issue...');
-    const githubResult = await createGitHubIssue(enhancedReport);
-
-    // Step 4: Create ClickUp task
-    console.log('Creating ClickUp task...');
-    const clickupResult = await createClickUpTask(enhancedReport, githubResult.url);
-
-    // Step 5: Store sync mapping for bidirectional updates
-    console.log('Storing sync mapping...');
-    setMapping(
-      githubResult.issueNumber.toString(),
-      clickupResult.taskId,
-      'bidirectional'
+    const githubResult = await withTiming(
+      'GitHub issue creation',
+      { ...ctx, operation: 'create-github-issue' },
+      () => createGitHubIssue(enhancedReport, correlationId)
     );
 
-    // Step 6: Deliver outgoing webhooks to subscribed services
-    // Fire-and-forget: don't wait for webhook delivery to complete
+    logger.info('GitHub issue created successfully', ctx, {
+      url: githubResult.url,
+      issueNumber: githubResult.issueNumber,
+      targetRepo: enhancedReport.targetRepo,
+    });
+
+    // Step 4: Deliver outgoing webhooks (fire-and-forget)
     const webhookPayload: OutgoingWebhookPayload = {
       event: 'bug.submitted',
       timestamp: Date.now(),
       data: {
         bugReport: enhancedReport,
         githubIssueUrl: githubResult.url,
-        clickupTaskUrl: clickupResult.url
       }
     };
 
-    // Deliver webhooks asynchronously (don't block response)
     deliverWebhookToSubscribers('bug.submitted', webhookPayload).catch(error => {
-      // Log error but don't fail the request
-      console.error('Failed to deliver webhooks:', error);
+      logger.error('Failed to deliver webhooks', ctx, {
+        error: error instanceof Error ? error.message : String(error),
+      });
     });
+
+    logger.info('Bug report submission complete', ctx);
 
     return NextResponse.json(
       {
         success: true,
         message: 'Bug report submitted successfully',
+        correlationId,
         data: {
           githubIssue: githubResult.url,
-          clickupTask: clickupResult.url,
           enhancedReport: {
             title: enhancedReport.title,
             priority: enhancedReport.priority,
@@ -259,21 +231,21 @@ export async function POST(request: NextRequest) {
           },
         },
       },
-      {
-        headers: getRateLimitHeaders(rateLimitResult)
-      }
+      { headers: getRateLimitHeaders(rateLimitResult) }
     );
   } catch (error) {
-    console.error('Error processing bug report:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Error processing bug report', ctx, {
+      error: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       {
         error: 'Failed to process bug report',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: errorMessage,
+        correlationId,
       },
-      {
-        status: 500,
-        headers: getRateLimitHeaders(rateLimitResult)
-      }
+      { status: 500, headers: getRateLimitHeaders(rateLimitResult) }
     );
   }
 }

@@ -256,16 +256,6 @@ export default function Home() {
                   </a>
                 </p>
                 <p style={{ color: '#421264' }}>
-                  <strong>ClickUp Task:</strong>{' '}
-                  <a
-                    href={submitResult.data.clickupTask}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline hover:opacity-80"
-                    style={{ color: '#9F25F4' }}
-                  >
-                    View Task
-                  </a>
                 </p>
                 <p style={{ color: '#421264' }}>
                   <strong>Priority:</strong> {submitResult.data.enhancedReport.priority}/5

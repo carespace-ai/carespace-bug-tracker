@@ -333,7 +333,7 @@ describe('llm-service integration tests', () => {
       // Verify API call parameters
       expect(mockCreate).toHaveBeenCalledWith({
         model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2000,
+        max_tokens: 4000,
         messages: [{
           role: 'user',
           content: expect.any(String),
