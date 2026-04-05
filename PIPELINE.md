@@ -1,28 +1,47 @@
 # Pipeline Run
 
 ## Task
-Investigate GitHub issue creation failure, add debug logging, remove ClickUp integration
-Issue: https://github.com/carespace-ai/carespace-bug-tracker/issues/1
+Investigate GitHub issue creation failure, add debug logging, remove ClickUp integration (carespace-ai/carespace-bug-tracker#1)
 
 ## Type
 bug-fix
 
 ## Status
-IN_PROGRESS
+COMPLETE
 
 ## Investigation
 
-### Root Cause Analysis
-1. **ClickUp coupling causes failures**: The submit-bug route calls ClickUp after GitHub. If ClickUp fails (missing API key, rate limit, etc.), the entire request returns 500 — even though the GitHub issue was already created successfully.
+### Root Causes Found
+1. **Error swallowing in github-service.ts**: The catch block threw generic "Failed to create GitHub issue" messages, discarding Octokit API error details (HTTP status, error message, validation errors)
+2. **No env var validation**: `GITHUB_OWNER` and `GITHUB_TOKEN` were silently empty strings — API calls would fail with cryptic 404 errors
+3. **No targetRepo validation**: If AI returned an invalid value, `REPOS[targetRepo]` would be `undefined`, causing silent failures
+4. **Sequential ClickUp dependency**: In route.ts, if ClickUp creation failed after GitHub succeeded, the entire request failed and the successful GitHub issue was lost
+5. **No correlation IDs**: Impossible to trace a request across LLM, upload, and GitHub services
 
-2. **No error isolation**: GitHub and ClickUp calls are sequential with no try-catch isolation. A ClickUp failure throws an unhandled error that bubbles to the catch-all, returning a generic 500 error.
+### Files Affected
+- `lib/github-service.ts` — error handling, validation, logging
+- `app/api/submit-bug/route.ts` — ClickUp removal, correlation IDs, structured logging
+- `app/api/retry-submissions/route.ts` — ClickUp removal, logging
+- `lib/types.ts` — removed ClickUp types
+- `lib/clickup-service.ts` — deleted
+- `lib/sync-storage.ts` — deleted (GitHub-to-ClickUp mapping)
+- `lib/webhook-validator.ts` — removed ClickUp signature verification
+- UI components, translations, CSP config — removed ClickUp references
 
-3. **Missing structured logging**: Only basic console.log statements exist. No correlation IDs, no timing metrics, no request/response details for API calls.
+## Build
+- Created `lib/logger.ts` with structured JSON logging, correlation IDs, and timing
+- Updated `github-service.ts` with `validateGitHubConfig()`, `formatGitHubApiError()`, and structured logging
+- Removed all ClickUp integration code (service, types, sync storage, e2e tests, UI, translations)
+- Updated CSP headers to remove ClickUp API domain
 
-4. **Unused resilience patterns**: Circuit breaker and retry handler are implemented but never used in the submission flow.
+## Review
+- All new code follows existing patterns
+- No new dependencies added
+- Pre-existing test failures unaffected (4 suites with pre-existing issues)
+- 6 test suites pass, webhook-validator and other affected tests updated
 
-### Approach
-1. Remove all ClickUp integration code
-2. Add structured logging with correlation IDs to the submission pipeline
-3. Make GitHub issue creation more resilient with better error reporting
-4. Update tests to reflect the new ClickUp-free architecture
+## Security
+- No secrets exposed in logs (IP addresses still only used for rate limiting)
+- Removed ClickUp API key dependency (reduced attack surface)
+- CSP headers updated to remove unnecessary ClickUp domain
+- No new external API calls introduced
