@@ -1,5 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import { EnhancedBugReport, GitHubIssue } from './types';
+import { logger, LogContext } from './logger';
 
 const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN
@@ -8,50 +9,61 @@ const octokit = new Octokit({
 const owner = process.env.GITHUB_OWNER || '';
 const defaultRepo = process.env.GITHUB_REPO || '';
 
-// Repository configuration
 const REPOS = {
   frontend: process.env.GITHUB_REPO_FRONTEND || 'carespace-ui',
   backend: process.env.GITHUB_REPO_BACKEND || 'carespace-admin',
-  attachments: defaultRepo || 'carespace-bug-tracker' // Keep using bug tracker repo for attachments
+  attachments: defaultRepo || 'carespace-bug-tracker'
 };
 
-/**
- * Uploads a file to the GitHub repository and returns its raw URL
- * @param fileContent - Buffer containing the file content
- * @param filename - Original filename
- * @param correlationId - Optional correlation ID for request tracing
- * @returns Raw GitHub URL to the uploaded file
- */
+function validateGitHubConfig(context: string): void {
+  const missing: string[] = [];
+  if (!process.env.GITHUB_TOKEN) missing.push('GITHUB_TOKEN');
+  if (!owner) missing.push('GITHUB_OWNER');
+  if (missing.length > 0) {
+    throw new Error(
+      `[GitHub] ${context}: Missing required environment variables: ${missing.join(', ')}`
+    );
+  }
+}
+
+function formatGitHubApiError(error: unknown): string {
+  if (error instanceof Error) {
+    const octokitError = error as Error & {
+      status?: number;
+      response?: { data?: { message?: string; errors?: unknown[] } };
+    };
+    const parts: string[] = [];
+    if (octokitError.status) parts.push(`HTTP ${octokitError.status}`);
+    if (octokitError.response?.data?.message) parts.push(octokitError.response.data.message);
+    if (octokitError.response?.data?.errors) {
+      parts.push(`Details: ${JSON.stringify(octokitError.response.data.errors)}`);
+    }
+    if (parts.length > 0) return parts.join(' — ');
+    return error.message;
+  }
+  return String(error);
+}
+
 export async function uploadFileToGitHub(
   fileContent: Buffer,
   filename: string,
   correlationId?: string
 ): Promise<string> {
-  const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
+  const ctx: LogContext = { correlationId: correlationId || 'unknown', service: 'github', operation: 'upload-file' };
 
-  // Validate environment variables
-  if (!owner) {
-    throw new Error('GITHUB_OWNER environment variable is not configured');
-  }
+  validateGitHubConfig('uploadFileToGitHub');
   if (!REPOS.attachments) {
     throw new Error('GITHUB_REPO environment variable is not configured');
   }
-  if (!process.env.GITHUB_TOKEN) {
-    throw new Error('GITHUB_TOKEN environment variable is not configured');
-  }
 
   try {
-    // Create a unique path using timestamp to avoid conflicts
     const timestamp = Date.now();
     const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
     const filepath = `bug-attachments/${timestamp}-${sanitizedFilename}`;
-
-    // Convert file content to base64 as required by GitHub API
     const content = fileContent.toString('base64');
 
-    console.log(`${logPrefix} Uploading file to ${owner}/${REPOS.attachments}/${filepath}`);
+    logger.info(`Uploading file to ${owner}/${REPOS.attachments}/${filepath}`, ctx);
 
-    // Upload file to repository (using attachments repo)
     const response = await octokit.repos.createOrUpdateFileContents({
       owner,
       repo: REPOS.attachments,
@@ -60,61 +72,51 @@ export async function uploadFileToGitHub(
       content,
     });
 
-    // Get the SHA of the uploaded file to construct the raw URL
     const sha = response.data.content?.sha;
     if (!sha) {
       throw new Error('Failed to get file SHA from GitHub response');
     }
 
-    // Return the raw content URL
-    // Format: https://raw.githubusercontent.com/{owner}/{repo}/main/{filepath}
-    const branch = 'main'; // Default branch, could be made configurable
-    return `https://raw.githubusercontent.com/${owner}/${REPOS.attachments}/${branch}/${filepath}`;
+    const branch = 'main';
+    const url = `https://raw.githubusercontent.com/${owner}/${REPOS.attachments}/${branch}/${filepath}`;
+    logger.info('File uploaded successfully', ctx, { url });
+    return url;
   } catch (error) {
-    console.error(`${logPrefix} Error uploading file to GitHub:`, error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to upload file to GitHub: ${errorMessage}`);
+    const errorDetail = formatGitHubApiError(error);
+    logger.error(`Error uploading file to GitHub: ${errorDetail}`, ctx);
+    throw new Error(`Failed to upload file to GitHub: ${errorDetail}`);
   }
 }
 
-/**
- * Uploads multiple files to GitHub repository
- * @param files - Array of File objects from FormData
- * @param correlationId - Optional correlation ID for request tracing
- * @returns Array of attachment objects with name, size, type, and GitHub URL
- */
 export async function uploadFilesToGitHub(
   files: File[],
   correlationId?: string
 ): Promise<{ name: string; size: number; type: string; url: string }[]> {
   const uploadPromises = files.map(async (file) => {
-    // Convert File to Buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-
-    // Upload file and get URL
     const url = await uploadFileToGitHub(buffer, file.name, correlationId);
-
-    return {
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      url,
-    };
+    return { name: file.name, size: file.size, type: file.type, url };
   });
-
-  // Upload all files in parallel
   return Promise.all(uploadPromises);
 }
 
 export async function createGitHubIssue(enhancedReport: EnhancedBugReport, correlationId?: string): Promise<{ url: string; issueNumber: number }> {
-  const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
+  const ctx: LogContext = { correlationId: correlationId || 'unknown', service: 'github', operation: 'create-issue' };
 
-  // Determine target repository based on AI analysis
+  validateGitHubConfig('createGitHubIssue');
+
   const targetRepo = REPOS[enhancedReport.targetRepo];
-  console.log(`${logPrefix} Creating issue in repository: ${owner}/${targetRepo} (${enhancedReport.targetRepo})`);
+  if (!targetRepo) {
+    throw new Error(`Invalid targetRepo "${enhancedReport.targetRepo}". Expected "frontend" or "backend".`);
+  }
 
-  // Format attachments section
+  logger.info(`Creating issue in ${owner}/${targetRepo}`, ctx, {
+    targetRepo: enhancedReport.targetRepo,
+    title: enhancedReport.title,
+    labels: enhancedReport.suggestedLabels,
+  });
+
   let attachmentsSection = '';
   if (enhancedReport.attachments && enhancedReport.attachments.length > 0) {
     attachmentsSection = '\n### Attachments\n' +
@@ -123,7 +125,7 @@ export async function createGitHubIssue(enhancedReport: EnhancedBugReport, corre
         .join('\n');
   }
 
-  const issueBody = `## 🐛 Bug Report
+  const issueBody = `## Bug Report
 
 ### Original User Report
 > **${enhancedReport.title}**
@@ -178,7 +180,7 @@ ${enhancedReport.userEmail ? `- **Reporter**: ${enhancedReport.userEmail}` : ''}
 
 ---
 
-## 🤖 Claude Code Fix Instructions
+## Claude Code Fix Instructions
 \`\`\`
 ${enhancedReport.claudePrompt}
 \`\`\`
@@ -187,6 +189,7 @@ ${enhancedReport.claudePrompt}
 *This issue was automatically created from a customer bug report, enhanced with AI analysis, and routed to the ${enhancedReport.targetRepo} repository.*`;
 
   try {
+    logger.debug('Sending create issue request to GitHub API', ctx);
     const response = await octokit.issues.create({
       owner,
       repo: targetRepo,
@@ -195,14 +198,15 @@ ${enhancedReport.claudePrompt}
       labels: enhancedReport.suggestedLabels,
     });
 
-    console.log(`${logPrefix} Successfully created issue in ${owner}/${targetRepo}: ${response.data.html_url}`);
-    return {
+    logger.info(`Issue #${response.data.number} created successfully`, ctx, {
       url: response.data.html_url,
-      issueNumber: response.data.number
-    };
+      issueNumber: response.data.number,
+    });
+    return { url: response.data.html_url, issueNumber: response.data.number };
   } catch (error) {
-    console.error(`${logPrefix} Error creating GitHub issue in ${owner}/${targetRepo}:`, error);
-    throw new Error(`Failed to create GitHub issue in ${targetRepo} repository`);
+    const errorDetail = formatGitHubApiError(error);
+    logger.error(`Failed to create GitHub issue in ${owner}/${targetRepo}: ${errorDetail}`, ctx);
+    throw new Error(`Failed to create GitHub issue in ${owner}/${targetRepo}: ${errorDetail}`);
   }
 }
 
@@ -212,48 +216,30 @@ export async function addCommentToIssue(
   targetRepo: 'frontend' | 'backend' = 'frontend',
   correlationId?: string
 ): Promise<void> {
-  const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
+  const ctx: LogContext = { correlationId: correlationId || 'unknown', service: 'github', operation: 'add-comment' };
   const repo = REPOS[targetRepo];
 
   try {
-    await octokit.issues.createComment({
-      owner,
-      repo,
-      issue_number: issueNumber,
-      body: comment
-    });
+    await octokit.issues.createComment({ owner, repo, issue_number: issueNumber, body: comment });
   } catch (error) {
-    console.error(`${logPrefix} Error adding comment to issue in ${owner}/${repo}:`, error);
-    throw new Error(`Failed to add comment to GitHub issue in ${targetRepo} repository`);
+    const errorDetail = formatGitHubApiError(error);
+    logger.error(`Error adding comment to issue #${issueNumber}: ${errorDetail}`, ctx);
+    throw new Error(`Failed to add comment to GitHub issue #${issueNumber}: ${errorDetail}`);
   }
 }
 
-/**
- * Retrieves a GitHub issue by its number
- * @param issueNumber - The issue number
- * @param targetRepo - The target repository ('frontend' or 'backend')
- * @param correlationId - Optional correlation ID for request tracing
- * @returns GitHubIssue object containing issue details
- */
 export async function getIssueByNumber(
   issueNumber: number,
   targetRepo: 'frontend' | 'backend' = 'frontend',
   correlationId?: string
 ): Promise<GitHubIssue> {
-  const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
+  const ctx: LogContext = { correlationId: correlationId || 'unknown', service: 'github', operation: 'get-issue' };
   const repo = REPOS[targetRepo];
 
   try {
-    console.log(`${logPrefix} Fetching issue #${issueNumber} from ${owner}/${repo}`);
-
-    const response = await octokit.issues.get({
-      owner,
-      repo,
-      issue_number: issueNumber
-    });
-
+    logger.debug(`Fetching issue #${issueNumber} from ${owner}/${repo}`, ctx);
+    const response = await octokit.issues.get({ owner, repo, issue_number: issueNumber });
     const issue = response.data;
-
     return {
       title: issue.title,
       body: issue.body || '',
@@ -261,73 +247,48 @@ export async function getIssueByNumber(
       assignees: issue.assignees?.map(assignee => assignee.login)
     };
   } catch (error) {
-    console.error(`${logPrefix} Error fetching issue #${issueNumber} from ${owner}/${repo}:`, error);
-    throw new Error(`Failed to get GitHub issue #${issueNumber} from ${targetRepo} repository`);
+    const errorDetail = formatGitHubApiError(error);
+    logger.error(`Error fetching issue #${issueNumber}: ${errorDetail}`, ctx);
+    throw new Error(`Failed to get GitHub issue #${issueNumber}: ${errorDetail}`);
   }
 }
 
-/**
- * Updates the status (state) of a GitHub issue
- * @param issueNumber - The issue number
- * @param status - The new status ('open' or 'closed')
- * @param targetRepo - The target repository ('frontend' or 'backend')
- * @param correlationId - Optional correlation ID for request tracing
- */
 export async function updateIssueStatus(
   issueNumber: number,
   status: 'open' | 'closed',
   targetRepo: 'frontend' | 'backend' = 'frontend',
   correlationId?: string
 ): Promise<void> {
-  const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
+  const ctx: LogContext = { correlationId: correlationId || 'unknown', service: 'github', operation: 'update-status' };
   const repo = REPOS[targetRepo];
 
   try {
-    console.log(`${logPrefix} Updating issue #${issueNumber} status to '${status}' in ${owner}/${repo}`);
-
-    await octokit.issues.update({
-      owner,
-      repo,
-      issue_number: issueNumber,
-      state: status
-    });
-
-    console.log(`${logPrefix} Successfully updated issue #${issueNumber} status to '${status}' in ${owner}/${repo}`);
+    logger.info(`Updating issue #${issueNumber} status to '${status}'`, ctx);
+    await octokit.issues.update({ owner, repo, issue_number: issueNumber, state: status });
+    logger.info(`Issue #${issueNumber} status updated`, ctx);
   } catch (error) {
-    console.error(`${logPrefix} Error updating issue #${issueNumber} status in ${owner}/${repo}:`, error);
-    throw new Error(`Failed to update GitHub issue #${issueNumber} status in ${targetRepo} repository`);
+    const errorDetail = formatGitHubApiError(error);
+    logger.error(`Error updating issue #${issueNumber} status: ${errorDetail}`, ctx);
+    throw new Error(`Failed to update GitHub issue #${issueNumber} status: ${errorDetail}`);
   }
 }
 
-/**
- * Updates the labels of a GitHub issue
- * @param issueNumber - The issue number
- * @param labels - Array of label names to set on the issue
- * @param targetRepo - The target repository ('frontend' or 'backend')
- * @param correlationId - Optional correlation ID for request tracing
- */
 export async function updateIssueLabels(
   issueNumber: number,
   labels: string[],
   targetRepo: 'frontend' | 'backend' = 'frontend',
   correlationId?: string
 ): Promise<void> {
-  const logPrefix = correlationId ? `[GitHub] [reqId: ${correlationId}]` : '[GitHub]';
+  const ctx: LogContext = { correlationId: correlationId || 'unknown', service: 'github', operation: 'update-labels' };
   const repo = REPOS[targetRepo];
 
   try {
-    console.log(`${logPrefix} Updating issue #${issueNumber} labels to [${labels.join(', ')}] in ${owner}/${repo}`);
-
-    await octokit.issues.update({
-      owner,
-      repo,
-      issue_number: issueNumber,
-      labels
-    });
-
-    console.log(`${logPrefix} Successfully updated issue #${issueNumber} labels in ${owner}/${repo}`);
+    logger.info(`Updating issue #${issueNumber} labels to [${labels.join(', ')}]`, ctx);
+    await octokit.issues.update({ owner, repo, issue_number: issueNumber, labels });
+    logger.info(`Issue #${issueNumber} labels updated`, ctx);
   } catch (error) {
-    console.error(`${logPrefix} Error updating issue #${issueNumber} labels in ${owner}/${repo}:`, error);
-    throw new Error(`Failed to update GitHub issue #${issueNumber} labels in ${targetRepo} repository`);
+    const errorDetail = formatGitHubApiError(error);
+    logger.error(`Error updating issue #${issueNumber} labels: ${errorDetail}`, ctx);
+    throw new Error(`Failed to update GitHub issue #${issueNumber} labels: ${errorDetail}`);
   }
 }

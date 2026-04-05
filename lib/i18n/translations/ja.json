@@ -75,18 +75,15 @@
   },
   "results": {
     "githubIssue": "GitHub Issue:",
-    "clickupTask": "ClickUp タスク:",
     "priority": "優先度:",
     "labels": "ラベル:",
-    "viewIssue": "Issue を表示",
-    "viewTask": "タスクを表示"
+    "viewIssue": "Issue を表示"
   },
   "footer": {
     "text": "バグレポートは自動的に：",
     "items": {
       "enhanced": "✨ AI分析により強化",
       "github": "📝 GitHubのissueとして作成",
-      "clickup": "📊 ClickUpに記録",
       "claude": "🤖 Claude Codeプロンプトを準備"
     }
   }

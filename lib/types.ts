@@ -40,20 +40,11 @@ export interface GitHubIssue {
   assignees?: string[];
 }
 
-export interface ClickUpTask {
-  name: string;
-  description: string;
-  status: string;
-  priority: number;
-  tags: string[];
-}
-
 export interface SubmitBugResponse {
   success: boolean;
   message: string;
   data?: {
     githubIssue: string;
-    clickupTask: string;
     enhancedReport: {
       title: string;
       priority: number;
@@ -95,14 +86,6 @@ export interface AIEnhancementSettings {
   claudePromptStyle: ClaudePromptStyle;
 }
 
-// Sync Storage Types
-export interface SyncMapping {
-  githubIssueId: string;
-  clickupTaskId: string;
-  lastSyncedAt: number;
-  syncDirection: 'github_to_clickup' | 'clickup_to_github' | 'bidirectional';
-}
-
 // Submission Queue Types
 export interface QueuedSubmission {
   id: string;
@@ -114,21 +97,18 @@ export interface QueuedSubmission {
   lastAttempt?: number;
   errors: {
     github?: string;
-    clickup?: string;
     anthropic?: string;
   };
   successfulServices: {
     github?: boolean;
-    clickup?: boolean;
     anthropic?: boolean;
   };
   urls?: {
     github?: string;
-    clickup?: string;
   };
 }
 
-// Webhook Types - Incoming Webhooks (from GitHub/ClickUp)
+// Webhook Types - Incoming Webhooks (from GitHub)
 export interface GitHubWebhookEvent {
   action?: string; // e.g., 'opened', 'closed', 'reopened', 'labeled', 'unlabeled', 'created'
   issue?: {
@@ -146,21 +126,6 @@ export interface GitHubWebhookEvent {
   };
 }
 
-export interface ClickUpWebhookEvent {
-  event: string; // e.g., 'taskStatusUpdated', 'taskTagsUpdated', 'taskCommentPosted'
-  task_id: string;
-  history_items?: Array<{
-    field: string;
-    before?: string;
-    after?: string;
-  }>;
-  comment?: {
-    comment_text: string;
-    user: {
-      username: string;
-    };
-  };
-}
 
 // Webhook Types - Outgoing Webhooks (to external services)
 export type OutgoingWebhookEventType = 'bug.submitted' | 'bug.status_changed' | 'bug.resolved';
@@ -171,7 +136,6 @@ export interface OutgoingWebhookPayload {
   data: {
     bugReport: BugReport | EnhancedBugReport;
     githubIssueUrl?: string;
-    clickupTaskUrl?: string;
     previousStatus?: string;
     newStatus?: string;
   };

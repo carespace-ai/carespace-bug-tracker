@@ -65,9 +65,9 @@ function performGlobalCleanup(): void {
 export function addToQueue(
   bugReport: BugReport,
   enhancedReport: EnhancedBugReport | undefined,
-  errors: { github?: string; clickup?: string; anthropic?: string },
-  successfulServices: { github?: boolean; clickup?: boolean; anthropic?: boolean },
-  urls?: { github?: string; clickup?: string }
+  errors: { github?: string; anthropic?: string },
+  successfulServices: { github?: boolean; anthropic?: boolean },
+  urls?: { github?: string }
 ): string {
   // Perform cleanup periodically
   performGlobalCleanup();
@@ -167,9 +167,9 @@ export function updateSubmission(
     status?: 'pending' | 'retrying' | 'failed' | 'partial';
     retryCount?: number;
     lastAttempt?: number;
-    errors?: { github?: string; clickup?: string; anthropic?: string };
-    successfulServices?: { github?: boolean; clickup?: boolean; anthropic?: boolean };
-    urls?: { github?: string; clickup?: string };
+    errors?: { github?: string; anthropic?: string };
+    successfulServices?: { github?: boolean; anthropic?: boolean };
+    urls?: { github?: string };
   }
 ): boolean {
   const submission = submissionQueue.get(id);

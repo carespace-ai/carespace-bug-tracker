@@ -10,7 +10,7 @@ const geistSans = Geist({
 
 export const metadata: Metadata = {
   title: "Carespace Bug Tracker",
-  description: "An automated bug tracking system that collects customer bug reports, enhances them with AI, and automatically creates GitHub issues and ClickUp tasks.",
+  description: "An automated bug tracking system that collects customer bug reports, enhances them with AI, and automatically creates GitHub issues.",
 };
 
 export const viewport: Viewport = {

@@ -13,14 +13,12 @@ interface AssignmentConfig {
     [key: string]: {
       description: string;
       githubAssignees: string[];
-      clickupAssignees: string[];
       enabled: boolean;
     };
   };
   teams: {
     [key: string]: {
       githubUsers: string[];
-      clickupUsers: string[];
     };
   };
   aiSuggestionPrompt: {
@@ -31,7 +29,6 @@ interface AssignmentConfig {
 
 interface AssignmentResult {
   githubAssignees: string[];
-  clickupAssignees: string[];
   assignmentMethod: 'config' | 'ai' | 'default' | 'none';
 }
 
@@ -124,7 +121,7 @@ Respond with ONLY the team name (one of: ${availableTeams}). If uncertain, respo
  * Determines the appropriate assignees for a bug report based on category and optional AI analysis
  * @param enhancedReport - The enhanced bug report
  * @param useAi - Whether to use AI for assignment suggestions (default: false)
- * @returns Promise with assignment result containing GitHub and ClickUp assignees
+ * @returns Promise with assignment result containing GitHub assignees
  */
 export async function determineAssignees(
   enhancedReport: EnhancedBugReport,
@@ -138,10 +135,9 @@ export async function determineAssignees(
     if (config.categoryMappings[category]) {
       const mapping = config.categoryMappings[category];
 
-      if (mapping.enabled && (mapping.githubAssignees.length > 0 || mapping.clickupAssignees.length > 0)) {
+      if (mapping.enabled && mapping.githubAssignees.length > 0) {
         return {
           githubAssignees: mapping.githubAssignees,
-          clickupAssignees: mapping.clickupAssignees,
           assignmentMethod: 'config'
         };
       }
@@ -155,7 +151,6 @@ export async function determineAssignees(
         const team = config.teams[aiTeamSuggestion];
         return {
           githubAssignees: team.githubUsers,
-          clickupAssignees: team.clickupUsers,
           assignmentMethod: 'ai'
         };
       }
@@ -165,7 +160,6 @@ export async function determineAssignees(
     if (config.settings.defaultAssigneeIfNoMatch) {
       return {
         githubAssignees: [config.settings.defaultAssigneeIfNoMatch],
-        clickupAssignees: [],
         assignmentMethod: 'default'
       };
     }
@@ -173,15 +167,12 @@ export async function determineAssignees(
     // No assignment possible
     return {
       githubAssignees: [],
-      clickupAssignees: [],
       assignmentMethod: 'none'
     };
   } catch (error) {
     console.error('Error determining assignees:', error);
-    // Return empty assignees on error to not block bug submission
     return {
       githubAssignees: [],
-      clickupAssignees: [],
       assignmentMethod: 'none'
     };
   }

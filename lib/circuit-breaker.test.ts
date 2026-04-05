@@ -13,7 +13,7 @@ describe('Circuit Breaker', () => {
     // Reset all circuits before each test
     resetCircuit('test-service');
     resetCircuit('github');
-    resetCircuit('clickup');
+    resetCircuit('azure-blob');
     jest.clearAllMocks();
   });
 
@@ -258,10 +258,10 @@ describe('Circuit Breaker', () => {
         recordFailure('github');
       }
 
-      // clickup should still be CLOSED
+      // azure-blob should still be CLOSED
       expect(getCircuitStatus('github').state).toBe(CircuitState.OPEN);
-      expect(getCircuitStatus('clickup').state).toBe(CircuitState.CLOSED);
-      expect(canProceed('clickup')).toBe(true);
+      expect(getCircuitStatus('azure-blob').state).toBe(CircuitState.CLOSED);
+      expect(canProceed('azure-blob')).toBe(true);
     });
 
     it('should maintain independent failure counts', () => {
@@ -271,15 +271,15 @@ describe('Circuit Breaker', () => {
       }
       expect(getCircuitStatus('github').failureCount).toBe(3);
 
-      // Fail clickup 2 times
+      // Fail azure-blob 2 times
       for (let i = 0; i < 2; i++) {
-        recordFailure('clickup');
+        recordFailure('azure-blob');
       }
-      expect(getCircuitStatus('clickup').failureCount).toBe(2);
+      expect(getCircuitStatus('azure-blob').failureCount).toBe(2);
 
       // Verify independence
       expect(getCircuitStatus('github').failureCount).toBe(3);
-      expect(getCircuitStatus('clickup').failureCount).toBe(2);
+      expect(getCircuitStatus('azure-blob').failureCount).toBe(2);
     });
   });
 

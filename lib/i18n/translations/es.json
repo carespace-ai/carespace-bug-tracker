@@ -75,18 +75,15 @@
   },
   "results": {
     "githubIssue": "Issue de GitHub:",
-    "clickupTask": "Tarea de ClickUp:",
     "priority": "Prioridad:",
     "labels": "Etiquetas:",
-    "viewIssue": "Ver Issue",
-    "viewTask": "Ver Tarea"
+    "viewIssue": "Ver Issue"
   },
   "footer": {
     "text": "Tu reporte de error será automáticamente:",
     "items": {
       "enhanced": "✨ Mejorado con análisis de IA",
       "github": "📝 Creado como un issue de GitHub",
-      "clickup": "📊 Registrado en ClickUp",
       "claude": "🤖 Preparado con prompts de Claude Code"
     }
   }

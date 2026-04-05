@@ -5,7 +5,7 @@ import {
   incrementRetryCount
 } from '@/lib/submission-queue';
 import { createGitHubIssue } from '@/lib/github-service';
-import { createClickUpTask } from '@/lib/clickup-service';
+import { logger, generateCorrelationId } from '@/lib/logger';
 
 /**
  * Authenticates admin requests using API key
@@ -14,7 +14,6 @@ function isAuthenticated(request: NextRequest): boolean {
   const apiKey = request.headers.get('x-admin-api-key');
   const adminKey = process.env.ADMIN_API_KEY;
 
-  // If no admin key is configured, allow access (for development)
   if (!adminKey) {
     return true;
   }
@@ -24,34 +23,29 @@ function isAuthenticated(request: NextRequest): boolean {
 
 /**
  * Retries a single queued submission
- * Returns result object with success status and updated service states
  */
 async function retrySubmission(submission: {
   id: string;
   bugReport: any;
   enhancedReport?: any;
-  errors: { github?: string; clickup?: string; anthropic?: string };
-  successfulServices: { github?: boolean; clickup?: boolean; anthropic?: boolean };
-  urls?: { github?: string; clickup?: string };
+  errors: { github?: string; anthropic?: string };
+  successfulServices: { github?: boolean; anthropic?: boolean };
+  urls?: { github?: string };
   retryCount: number;
 }): Promise<{
   id: string;
   success: boolean;
   retried: string[];
-  errors: { github?: string; clickup?: string; anthropic?: string };
+  errors: { github?: string; anthropic?: string };
   githubUrl?: string;
-  clickupUrl?: string;
 }> {
-  const errors: { github?: string; clickup?: string; anthropic?: string } = {};
+  const correlationId = generateCorrelationId();
+  const errors: { github?: string; anthropic?: string } = {};
   const retriedServices: string[] = [];
   const successfulServices = { ...submission.successfulServices };
 
   let githubUrl: string | undefined = submission.urls?.github;
-  let clickupUrl: string | undefined = submission.urls?.clickup;
-  let githubIssueNumber: number | undefined;
-  let clickupTaskId: string | undefined;
 
-  // Use enhanced report if available, otherwise use original bug report
   const reportToUse = submission.enhancedReport || {
     ...submission.bugReport,
     enhancedDescription: submission.bugReport.description,
@@ -64,51 +58,26 @@ async function retrySubmission(submission: {
   // Retry GitHub if it previously failed
   if (!submission.successfulServices.github && submission.errors.github) {
     retriedServices.push('github');
+    logger.info('Retrying GitHub issue creation', { correlationId, service: 'retry', operation: 'github' }, {
+      submissionId: submission.id,
+      retryCount: submission.retryCount,
+    });
     try {
-      const githubResult = await createGitHubIssue(reportToUse);
+      const githubResult = await createGitHubIssue(reportToUse, correlationId);
       githubUrl = githubResult.url;
-      githubIssueNumber = githubResult.issueNumber;
       successfulServices.github = true;
       delete errors.github;
+      logger.info('GitHub issue retry succeeded', { correlationId, service: 'retry' }, {
+        url: githubResult.url,
+      });
     } catch (error) {
       errors.github = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('GitHub issue retry failed', { correlationId, service: 'retry' }, {
+        error: errors.github,
+      });
     }
   }
 
-  // Retry ClickUp if it previously failed
-  // Note: ClickUp requires a GitHub URL, so we can only retry if GitHub has succeeded
-  if (!submission.successfulServices.clickup && submission.errors.clickup) {
-    retriedServices.push('clickup');
-    try {
-      // Use the GitHub URL from retry if available, or from stored URLs
-      const githubIssueUrl = githubUrl || submission.urls?.github || '';
-
-      if (!githubIssueUrl) {
-        throw new Error('Cannot create ClickUp task without GitHub issue URL');
-      }
-
-      const clickupResult = await createClickUpTask(reportToUse, githubIssueUrl);
-      clickupUrl = clickupResult.url;
-      clickupTaskId = clickupResult.taskId;
-      successfulServices.clickup = true;
-      delete errors.clickup;
-    } catch (error) {
-      errors.clickup = error instanceof Error ? error.message : 'Unknown error';
-    }
-  }
-
-  // Store sync mapping if both services succeeded
-  if (successfulServices.github && successfulServices.clickup && githubIssueNumber && clickupTaskId) {
-    try {
-      const { setMapping } = await import('@/lib/sync-storage');
-      setMapping(githubIssueNumber.toString(), clickupTaskId, 'bidirectional');
-    } catch (error) {
-      // Log error but don't fail the retry - mapping is not critical
-      console.error('Failed to store sync mapping:', error);
-    }
-  }
-
-  // Update submission in queue
   const hasAnySuccess = Object.values(successfulServices).some(Boolean);
   const hasAnyFailure = Object.keys(errors).length > 0;
 
@@ -118,7 +87,7 @@ async function retrySubmission(submission: {
   } else if (hasAnyFailure) {
     newStatus = 'partial';
   } else {
-    newStatus = 'pending'; // Will be removed from queue as fully succeeded
+    newStatus = 'pending';
   }
 
   updateSubmission(submission.id, {
@@ -128,7 +97,6 @@ async function retrySubmission(submission: {
     successfulServices,
     urls: {
       github: githubUrl || submission.urls?.github,
-      clickup: clickupUrl || submission.urls?.clickup
     }
   });
 
@@ -140,7 +108,6 @@ async function retrySubmission(submission: {
     retried: retriedServices,
     errors: hasAnyFailure ? errors : {},
     githubUrl,
-    clickupUrl
   };
 }
 
@@ -150,7 +117,6 @@ async function retrySubmission(submission: {
  * Requires admin authentication via x-admin-api-key header
  */
 export async function POST(request: NextRequest) {
-  // Check authentication
   if (!isAuthenticated(request)) {
     return NextResponse.json(
       {
@@ -162,7 +128,6 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Get all submissions ready for retry
     const submissions = getRetryableSubmissions();
 
     if (submissions.length === 0) {
@@ -173,12 +138,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Retry each submission
     const results = await Promise.allSettled(
       submissions.map(submission => retrySubmission(submission))
     );
 
-    // Process results
     const retryResults = results.map((result, index) => {
       if (result.status === 'fulfilled') {
         return result.value;
@@ -192,7 +155,6 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Count successes and failures
     const successCount = retryResults.filter(r => r.success).length;
     const failureCount = retryResults.length - successCount;
 
