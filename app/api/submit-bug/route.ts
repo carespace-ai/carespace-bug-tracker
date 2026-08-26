@@ -8,6 +8,7 @@ import { getRateLimitResult } from '@/lib/rate-limiter';
 import { bugReportSchema } from '@/lib/validation/bug-report-schema';
 import { setMapping } from '@/lib/sync-storage';
 import { deliverWebhookToSubscribers } from '@/lib/outgoing-webhook-service';
+import { paperclipEnabled, submitToPaperclip } from '@/lib/paperclip-service';
 
 /**
  * Helper function to generate rate limit headers
@@ -196,17 +197,42 @@ export async function POST(request: NextRequest) {
 
     const bugReport: BugReport = validationResult.data;
 
+    // Upload attachments first — both submission paths link them by URL.
+    // Filter out empty/placeholder files before uploading
+    const validAttachments = attachments.filter(file => file && file.size > 0);
+    let uploadedAttachments: NonNullable<BugReport['attachments']> = [];
+    if (validAttachments.length > 0) {
+      console.log(`Uploading ${validAttachments.length} attachments to Azure Blob Storage...`);
+      uploadedAttachments = await uploadFilesToAzureBlob(validAttachments);
+    }
+
+    // Preferred path: hand off to the Paperclip Bug Triage agent, which has
+    // full repo clones, cross-repo duplicate search, and browser reproduction
+    // with screenshots. Falls through to the legacy path on any failure so a
+    // report is never lost.
+    if (paperclipEnabled()) {
+      try {
+        const paperclip = await submitToPaperclip(bugReport, uploadedAttachments);
+        return NextResponse.json(
+          {
+            success: true,
+            message: 'Bug report submitted — an agent is investigating and will file the tracked issue',
+            data: {
+              paperclipIssue: paperclip.identifier ?? paperclip.issueId,
+            },
+          },
+          { headers: getRateLimitHeaders(rateLimitResult) }
+        );
+      } catch (paperclipError) {
+        console.error('Paperclip submission failed; falling back to legacy path:', paperclipError);
+      }
+    }
+
+    // Legacy path: local LLM enhancement + direct GitHub/ClickUp creation
     // Step 1: Enhance bug report with LLM
     console.log('Enhancing bug report with LLM...');
     const enhancedReport = await enhanceBugReport(bugReport);
-
-    // Step 2: Upload attachments to GitHub (if any)
-    // Filter out empty/placeholder files before uploading
-    const validAttachments = attachments.filter(file => file && file.size > 0);
-
-    if (validAttachments.length > 0) {
-      console.log(`Uploading ${validAttachments.length} attachments to Azure Blob Storage...`);
-      const uploadedAttachments = await uploadFilesToAzureBlob(validAttachments);
+    if (uploadedAttachments.length > 0) {
       enhancedReport.attachments = uploadedAttachments;
     }
 
